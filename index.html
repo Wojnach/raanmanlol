@@ -483,79 +483,250 @@
         }
 
         // ============================================
-        // PARTICLE SYSTEM
+        // PARTICLE SYSTEM - MAXIMUM JUICE
         // ============================================
+        const MAX_PARTICLES = 2000; // Allow lots of particles
+        let backgroundParticles = []; // Ambient floating particles
+        let trailParticles = []; // Speed trails
+
         function createParticles(x, y, type, count = 10) {
             const configs = {
-                optimization: { colors: ['#00ff88', '#00ffaa', '#88ffcc', '#ffffff'], speed: 8, size: 6, gravity: 0.2 },
-                hack: { colors: ['#ff00ff', '#ff00aa', '#ff88ff', '#ffffff'], speed: 15, size: 8, gravity: 0.1 },
-                jump: { colors: ['#4444ff', '#6666ff', '#8888ff'], speed: 5, size: 4, gravity: 0.3 },
-                damage: { colors: ['#ff0055', '#ff3377', '#ff5599'], speed: 10, size: 5, gravity: 0.2 },
-                code: { colors: ['#00ff88', '#ffffff', '#888888'], speed: 6, size: 4, gravity: 0.15, isText: true },
-                glitch: { colors: ['#00ff88', '#ff00ff', '#00ffff'], speed: 12, size: 10, gravity: 0 },
-                boss: { colors: ['#ff8800', '#ffaa00', '#ffcc00'], speed: 15, size: 10, gravity: 0.1 },
-                landing: { colors: ['#ffffff', '#aaaaaa', '#666666'], speed: 4, size: 3, gravity: 0.4 },
-                collect: { colors: ['#00ff88', '#88ffaa', '#aaffcc', '#ffffff'], speed: 10, size: 8, gravity: -0.1 }
+                optimization: { colors: ['#00ff88', '#00ffaa', '#88ffcc', '#ffffff', '#aaffee'], speed: 12, size: 8, gravity: 0.15, glow: true },
+                hack: { colors: ['#ff00ff', '#ff00aa', '#ff88ff', '#ffffff', '#dd00dd', '#ff44ff'], speed: 20, size: 12, gravity: 0.05, glow: true },
+                jump: { colors: ['#4444ff', '#6666ff', '#8888ff', '#aaaaff', '#00ffff'], speed: 8, size: 6, gravity: 0.25, glow: true },
+                damage: { colors: ['#ff0055', '#ff3377', '#ff5599', '#ff0000', '#ff2222'], speed: 15, size: 8, gravity: 0.15, glow: true },
+                code: { colors: ['#00ff88', '#ffffff', '#888888', '#00ffaa', '#aaffcc'], speed: 8, size: 5, gravity: 0.1, isText: true },
+                glitch: { colors: ['#00ff88', '#ff00ff', '#00ffff', '#ffff00', '#ff0088'], speed: 18, size: 15, gravity: 0, glow: true },
+                boss: { colors: ['#ff8800', '#ffaa00', '#ffcc00', '#ffff00', '#ff6600'], speed: 20, size: 14, gravity: 0.08, glow: true },
+                landing: { colors: ['#ffffff', '#aaaaaa', '#666666', '#888888'], speed: 6, size: 4, gravity: 0.35 },
+                collect: { colors: ['#00ff88', '#88ffaa', '#aaffcc', '#ffffff', '#00ffcc'], speed: 15, size: 10, gravity: -0.15, glow: true },
+                spark: { colors: ['#ffffff', '#ffff00', '#ffaa00'], speed: 25, size: 3, gravity: 0.5, glow: true },
+                smoke: { colors: ['#333333', '#444444', '#555555', '#666666'], speed: 3, size: 20, gravity: -0.05 },
+                explosion: { colors: ['#ff8800', '#ff4400', '#ffaa00', '#ffcc00', '#ffffff'], speed: 25, size: 15, gravity: 0.2, glow: true },
+                trail: { colors: ['#00ff88', '#00ffaa'], speed: 2, size: 6, gravity: 0, glow: true },
+                star: { colors: ['#ffffff', '#ffffaa', '#aaffff'], speed: 5, size: 4, gravity: -0.02, glow: true },
+                binary: { colors: ['#00ff00', '#00aa00', '#008800'], speed: 10, size: 6, gravity: 0.1, isText: true, textChars: ['0', '1'] },
+                rust: { colors: ['#ff6600', '#ff8800', '#ffaa00', '#cc4400'], speed: 12, size: 8, gravity: 0.2, glow: true }
             };
 
             const config = configs[type] || configs.optimization;
-            const codeChars = ['0', '1', '{', '}', ';', '//', '()', '[]', '=>', 'fn', 'let', 'const'];
+            const codeChars = config.textChars || ['0', '1', '{', '}', ';', '//', '()', '[]', '=>', 'fn', 'let', 'const', 'async', 'await', '===', '!==', '++', '--'];
 
-            for (let i = 0; i < count; i++) {
-                const angle = (Math.PI * 2 * i / count) + randomRange(-0.3, 0.3);
-                const speed = randomRange(config.speed * 0.5, config.speed);
+            // Limit total particles for performance
+            const actualCount = Math.min(count, MAX_PARTICLES - particles.length);
+
+            for (let i = 0; i < actualCount; i++) {
+                const angle = (Math.PI * 2 * i / actualCount) + randomRange(-0.5, 0.5);
+                const speed = randomRange(config.speed * 0.4, config.speed * 1.2);
 
                 particles.push({
-                    x: x,
-                    y: y,
+                    x: x + randomRange(-5, 5),
+                    y: y + randomRange(-5, 5),
                     vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed - 2,
-                    size: randomRange(config.size * 0.5, config.size),
+                    vy: Math.sin(angle) * speed - randomRange(1, 4),
+                    size: randomRange(config.size * 0.4, config.size * 1.3),
                     color: config.colors[Math.floor(Math.random() * config.colors.length)],
                     life: 1,
-                    decay: randomRange(0.015, 0.04),
+                    decay: randomRange(0.01, 0.035),
                     gravity: config.gravity,
                     type: type,
                     text: config.isText ? codeChars[Math.floor(Math.random() * codeChars.length)] : null,
                     rotation: randomRange(0, Math.PI * 2),
-                    rotationSpeed: randomRange(-0.2, 0.2)
+                    rotationSpeed: randomRange(-0.3, 0.3),
+                    glow: config.glow || false,
+                    scale: 1,
+                    scaleSpeed: randomRange(-0.02, 0.02)
                 });
             }
         }
 
+        // Spawn a burst of particles in a specific pattern
+        function createParticleBurst(x, y, type, count, pattern = 'circle') {
+            const configs = {
+                optimization: { colors: ['#00ff88', '#00ffaa', '#88ffcc', '#ffffff'], speed: 15, size: 10 },
+                hack: { colors: ['#ff00ff', '#ff00aa', '#ff88ff'], speed: 25, size: 12 },
+                boss: { colors: ['#ff8800', '#ffaa00', '#ffcc00'], speed: 20, size: 14 }
+            };
+            const config = configs[type] || configs.optimization;
+
+            for (let i = 0; i < count; i++) {
+                let vx, vy;
+                if (pattern === 'circle') {
+                    const angle = (Math.PI * 2 * i / count);
+                    vx = Math.cos(angle) * config.speed;
+                    vy = Math.sin(angle) * config.speed;
+                } else if (pattern === 'explosion') {
+                    const angle = randomRange(0, Math.PI * 2);
+                    const speed = randomRange(config.speed * 0.5, config.speed * 1.5);
+                    vx = Math.cos(angle) * speed;
+                    vy = Math.sin(angle) * speed;
+                } else if (pattern === 'fountain') {
+                    vx = randomRange(-8, 8);
+                    vy = randomRange(-config.speed, -config.speed * 0.5);
+                } else if (pattern === 'ring') {
+                    const angle = (Math.PI * 2 * i / count);
+                    const ringSpeed = config.speed * 0.8;
+                    vx = Math.cos(angle) * ringSpeed;
+                    vy = Math.sin(angle) * ringSpeed * 0.3;
+                }
+
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: vx,
+                    vy: vy,
+                    size: randomRange(config.size * 0.5, config.size),
+                    color: config.colors[Math.floor(Math.random() * config.colors.length)],
+                    life: 1,
+                    decay: randomRange(0.015, 0.03),
+                    gravity: 0.15,
+                    type: type,
+                    rotation: 0,
+                    rotationSpeed: randomRange(-0.2, 0.2),
+                    glow: true
+                });
+            }
+        }
+
+        // Continuous trail effect
+        function createTrailParticle(x, y, color) {
+            if (trailParticles.length > 500) return;
+            trailParticles.push({
+                x: x,
+                y: y,
+                size: randomRange(3, 8),
+                color: color || '#00ff88',
+                life: 1,
+                decay: 0.05
+            });
+        }
+
+        // Ambient background particles
+        function initBackgroundParticles() {
+            for (let i = 0; i < 100; i++) {
+                backgroundParticles.push({
+                    x: randomRange(0, canvas.width * 3),
+                    y: randomRange(0, canvas.height),
+                    size: randomRange(1, 3),
+                    speed: randomRange(0.2, 0.8),
+                    alpha: randomRange(0.1, 0.4),
+                    color: ['#00ff88', '#ff00ff', '#00ffff', '#ffffff'][Math.floor(Math.random() * 4)]
+                });
+            }
+        }
+
+        function updateBackgroundParticles() {
+            backgroundParticles.forEach(p => {
+                p.x -= p.speed;
+                if (p.x < cameraX - 50) {
+                    p.x = cameraX + canvas.width + randomRange(0, 200);
+                    p.y = randomRange(0, canvas.height);
+                }
+            });
+        }
+
+        function drawBackgroundParticles() {
+            backgroundParticles.forEach(p => {
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x - cameraX, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+        }
+
         function updateParticles() {
+            // Update main particles
             particles = particles.filter(p => {
                 p.x += p.vx * slowMotion;
                 p.y += p.vy * slowMotion;
                 p.vy += p.gravity * slowMotion;
-                p.vx *= 0.98;
+                p.vx *= 0.97;
                 p.life -= p.decay * slowMotion;
-                p.size *= 0.99;
+                p.size *= 0.985;
                 p.rotation += p.rotationSpeed;
-                return p.life > 0 && p.size > 0.5;
+                if (p.scale !== undefined) {
+                    p.scale += p.scaleSpeed;
+                    p.scale = Math.max(0.1, p.scale);
+                }
+                return p.life > 0 && p.size > 0.3;
             });
+
+            // Update trail particles
+            trailParticles = trailParticles.filter(p => {
+                p.life -= p.decay;
+                p.size *= 0.95;
+                return p.life > 0;
+            });
+
+            // Update background particles
+            updateBackgroundParticles();
         }
 
         function drawParticles() {
+            // Draw trail particles first (behind everything)
+            trailParticles.forEach(p => {
+                ctx.globalAlpha = p.life * 0.6;
+                ctx.fillStyle = p.color;
+                ctx.shadowColor = p.color;
+                ctx.shadowBlur = 8;
+                ctx.beginPath();
+                ctx.arc(p.x - cameraX, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.shadowBlur = 0;
+
+            // Draw main particles
             particles.forEach(p => {
                 ctx.save();
                 ctx.globalAlpha = p.life * p.life;
                 ctx.translate(p.x - cameraX, p.y);
                 ctx.rotate(p.rotation);
+                if (p.scale) ctx.scale(p.scale, p.scale);
 
                 if (p.text) {
                     ctx.fillStyle = p.color;
                     ctx.font = `bold ${p.size * 3}px Courier New`;
                     ctx.textAlign = 'center';
+                    if (p.glow) {
+                        ctx.shadowColor = p.color;
+                        ctx.shadowBlur = 10;
+                    }
                     ctx.fillText(p.text, 0, 0);
                 } else {
                     ctx.fillStyle = p.color;
-                    ctx.shadowColor = p.color;
-                    ctx.shadowBlur = p.size * 2;
+                    if (p.glow) {
+                        ctx.shadowColor = p.color;
+                        ctx.shadowBlur = p.size * 3;
+                    }
 
                     if (p.type === 'glitch') {
-                        ctx.fillRect(-p.size, -p.size/4, p.size * 2, p.size/2);
+                        // Glitch bars
+                        ctx.fillRect(-p.size * 1.5, -p.size/4, p.size * 3, p.size/2);
+                        ctx.globalAlpha *= 0.5;
+                        ctx.fillRect(-p.size * 2, -p.size/6, p.size * 4, p.size/3);
+                    } else if (p.type === 'spark') {
+                        // Spark streaks
+                        ctx.beginPath();
+                        ctx.moveTo(-p.size * 2, 0);
+                        ctx.lineTo(p.size * 2, 0);
+                        ctx.strokeStyle = p.color;
+                        ctx.lineWidth = p.size / 2;
+                        ctx.stroke();
+                    } else if (p.type === 'star') {
+                        // Star shape
+                        ctx.beginPath();
+                        for (let i = 0; i < 5; i++) {
+                            const angle = (i * Math.PI * 2 / 5) - Math.PI / 2;
+                            const r = i % 2 === 0 ? p.size : p.size / 2;
+                            if (i === 0) ctx.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
+                            else ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+                        }
+                        ctx.closePath();
+                        ctx.fill();
                     } else {
+                        // Default circle
                         ctx.beginPath();
                         ctx.arc(0, 0, p.size/2, 0, Math.PI * 2);
                         ctx.fill();
@@ -817,30 +988,55 @@
             boss.defeated = true;
             boss.active = false;
             bossesDefeated++;
-            score += 1000 * combo;
-            combo += 5;
+            score += 2000 * combo;
+            combo += 10;
             if (combo > maxCombo) maxCombo = combo;
 
-            screenShake = 30;
-            glitchIntensity = 1;
+            screenShake = 50;
+            glitchIntensity = 2;
             screenFlash = { intensity: 1, color: boss.color };
-            slowMotion = 0.2;
+            slowMotion = 0.1;
+            hitstop = 20;
 
-            // Explosion of particles
-            for (let i = 0; i < 5; i++) {
+            // MASSIVE BOSS DEATH EXPLOSION - cascading effects
+            for (let i = 0; i < 15; i++) {
                 setTimeout(() => {
-                    createParticles(boss.x + randomRange(-40, 40), boss.y + randomRange(-40, 40), 'boss', 30);
+                    const offsetX = randomRange(-80, 80);
+                    const offsetY = randomRange(-60, 60);
+                    createParticleBurst(boss.x + offsetX, boss.y + offsetY, 'boss', 60, 'explosion');
+                    createParticles(boss.x + offsetX, boss.y + offsetY, 'spark', 40);
+                    createParticles(boss.x + offsetX, boss.y + offsetY, 'glitch', 25);
+                    screenShake = 30 - i * 2;
+                    if (i % 3 === 0) {
+                        screenFlash = { intensity: 0.8 - i * 0.05, color: boss.color };
+                    }
+                }, i * 80);
+            }
+
+            // Binary rain effect
+            for (let i = 0; i < 8; i++) {
+                setTimeout(() => {
+                    createParticles(boss.x + randomRange(-100, 100), boss.y - 50, 'binary', 30);
+                    createParticles(boss.x + randomRange(-100, 100), boss.y - 50, 'code', 25);
                 }, i * 100);
             }
+
+            // Final massive burst
+            setTimeout(() => {
+                createParticleBurst(boss.x, boss.y - 30, 'optimization', 100, 'explosion');
+                createParticles(boss.x, boss.y - 30, 'star', 50);
+                screenShake = 60;
+                screenFlash = { intensity: 1, color: '#ffffff' };
+            }, 1200);
 
             setTimeout(() => {
                 slowMotion = 1;
                 currentBoss = null;
-            }, 1000);
+            }, 1500);
 
             // Check for victory
             if (bosses.sperring.defeated && bosses.sydney.defeated) {
-                setTimeout(() => victory(), 2000);
+                setTimeout(() => victory(), 2500);
             }
         }
 
@@ -1062,19 +1258,25 @@
                 raanman.vx *= 0.85;
             }
 
-            // Jumping
+            // Jumping - MAXIMUM JUICE
             if (keys.jump && !jumpPressed && raanman.jumpsLeft > 0) {
                 raanman.vy = raanman.jumpForce;
                 raanman.jumpsLeft--;
                 jumpPressed = true;
-                raanman.squash = 0.6;
-                raanman.stretch = 1.4;
-                createParticles(raanman.x + 15, raanman.y, 'jump', 8);
-                screenShake = 3;
+                raanman.squash = 0.5;
+                raanman.stretch = 1.5;
+                createParticles(raanman.x + 15, raanman.y, 'jump', 20);
+                createParticles(raanman.x + 15, raanman.y, 'smoke', 8);
+                screenShake = 5;
 
                 if (raanman.jumpsLeft === 0) {
-                    createParticles(raanman.x + 15, raanman.y, 'optimization', 12);
-                    screenFlash = { intensity: 0.3, color: '#00ff88' };
+                    // DOUBLE JUMP - extra juice!
+                    createParticleBurst(raanman.x + 15, raanman.y, 'optimization', 30, 'ring');
+                    createParticles(raanman.x + 15, raanman.y, 'glitch', 15);
+                    createParticles(raanman.x + 15, raanman.y, 'spark', 25);
+                    screenFlash = { intensity: 0.5, color: '#00ff88' };
+                    screenShake = 10;
+                    glitchIntensity = 0.3;
                 }
             }
             if (!keys.jump) jumpPressed = false;
@@ -1116,12 +1318,17 @@
                     raanman.y - raanman.height < p.y + p.height &&
                     raanman.vy > 0) {
 
-                    // Land on platform
-                    if (raanman.vy > 10) {
-                        createParticles(raanman.x + 15, p.y, 'landing', 8);
-                        screenShake = raanman.vy / 5;
-                        raanman.squash = 1.3;
-                        raanman.stretch = 0.7;
+                    // Land on platform - IMPACTFUL
+                    if (raanman.vy > 5) {
+                        const impactForce = raanman.vy / 10;
+                        createParticles(raanman.x + 15, p.y, 'landing', 15 + impactForce * 5);
+                        createParticles(raanman.x + 15, p.y, 'smoke', 10);
+                        if (raanman.vy > 12) {
+                            createParticles(raanman.x + 15, p.y, 'spark', 12);
+                        }
+                        screenShake = raanman.vy / 3;
+                        raanman.squash = 1.4;
+                        raanman.stretch = 0.6;
                     }
 
                     raanman.y = p.y;
@@ -1142,12 +1349,20 @@
             // Hack cooldown
             if (raanman.hackCooldown > 0) raanman.hackCooldown--;
 
-            // Trail
+            // Trail - more particles when moving fast
             if (Math.abs(raanman.vx) > 1 || Math.abs(raanman.vy) > 1) {
                 raanman.trail.push({ x: raanman.x + 15, y: raanman.y - 22, alpha: 1 });
+                // Spawn trail particles based on speed
+                const speed = Math.sqrt(raanman.vx * raanman.vx + raanman.vy * raanman.vy);
+                if (speed > 4 && Math.random() > 0.5) {
+                    createTrailParticle(raanman.x + 15 + randomRange(-5, 5), raanman.y - 22 + randomRange(-5, 5), combo > 5 ? '#ff00ff' : '#00ff88');
+                }
+                if (speed > 8 && Math.random() > 0.7) {
+                    createParticles(raanman.x + 15, raanman.y - 22, 'spark', 2);
+                }
             }
             raanman.trail = raanman.trail.filter(t => {
-                t.alpha -= 0.1;
+                t.alpha -= 0.08;
                 return t.alpha > 0;
             });
 
@@ -1277,55 +1492,89 @@
         }
 
         // ============================================
-        // HACK ABILITY
+        // HACK ABILITY - REALITY DELETION
         // ============================================
         function activateHack() {
             raanman.isHacking = true;
-            raanman.hackDuration = 30;
+            raanman.hackDuration = 45;
             raanman.hackCooldown = 60;
             hackMeter = 0;
-            screenShake = 20;
-            glitchIntensity = 1;
-            screenFlash = { intensity: 0.5, color: '#ff00ff' };
-            slowMotion = 0.3;
-            hitstop = 5;
+            screenShake = 35;
+            glitchIntensity = 1.5;
+            screenFlash = { intensity: 0.8, color: '#ff00ff' };
+            slowMotion = 0.2;
+            hitstop = 10;
 
-            setTimeout(() => { slowMotion = 1; }, 300);
+            // MASSIVE particle burst from Raanman
+            createParticleBurst(raanman.x + 15, raanman.y - 22, 'hack', 50, 'explosion');
+            createParticles(raanman.x + 15, raanman.y - 22, 'glitch', 40);
+            createParticles(raanman.x + 15, raanman.y - 22, 'binary', 30);
+            createParticles(raanman.x + 15, raanman.y - 22, 'code', 25);
 
-            // Delete all visible TODO blocks
+            // Spreading hack wave effect
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    createParticles(raanman.x + 15 + (i - 2) * 80, raanman.y - 22, 'glitch', 15);
+                }, i * 50);
+            }
+
+            setTimeout(() => { slowMotion = 1; }, 400);
+
+            // Delete all visible TODO blocks with EXTREME effects
             let deletedAny = false;
+            let deleteDelay = 0;
             todoBlocks.forEach(t => {
-                if (!t.deleted && Math.abs(t.x - raanman.x) < 500) {
-                    t.deleted = true;
-                    deletedAny = true;
-                    todosDeleted++;
-                    score += 100 * combo;
-                    combo++;
-                    if (combo > maxCombo) maxCombo = combo;
+                if (!t.deleted && Math.abs(t.x - raanman.x) < 600) {
+                    // Stagger deletions for dramatic effect
+                    setTimeout(() => {
+                        t.deleted = true;
+                        todosDeleted++;
+                        score += 100 * combo;
+                        combo++;
+                        if (combo > maxCombo) maxCombo = combo;
 
-                    createParticles(t.x + t.width/2, t.y + t.height/2, 'hack', 25);
-                    createParticles(t.x + t.width/2, t.y + t.height/2, 'code', 15);
+                        // MASSIVE particle explosion on each TODO
+                        createParticleBurst(t.x + t.width/2, t.y + t.height/2, 'hack', 60, 'explosion');
+                        createParticles(t.x + t.width/2, t.y + t.height/2, 'code', 40);
+                        createParticles(t.x + t.width/2, t.y + t.height/2, 'glitch', 25);
+                        createParticles(t.x + t.width/2, t.y + t.height/2, 'spark', 30);
+                        createParticles(t.x + t.width/2, t.y + t.height/2, 'rust', 20);
+
+                        screenShake = 20;
+                        screenFlash = { intensity: 0.4, color: '#ff00ff' };
+                    }, deleteDelay);
+                    deleteDelay += 80;
+                    deletedAny = true;
                 }
             });
 
-            // Damage boss if active
+            // Damage boss if active - with EXTRA JUICE
             if (currentBoss && currentBoss.active) {
                 const dist = Math.abs(currentBoss.x - raanman.x);
-                if (dist < 400) {
-                    currentBoss.health -= 25;
-                    score += 200 * combo;
-                    createParticles(currentBoss.x, currentBoss.y - 30, 'hack', 30);
-                    screenShake = 25;
+                if (dist < 500) {
+                    currentBoss.health -= 30;
+                    score += 250 * combo;
+
+                    // Boss damage explosion
+                    createParticleBurst(currentBoss.x, currentBoss.y - 30, 'boss', 80, 'explosion');
+                    createParticles(currentBoss.x, currentBoss.y - 30, 'hack', 50);
+                    createParticles(currentBoss.x, currentBoss.y - 30, 'spark', 40);
+                    createParticles(currentBoss.x, currentBoss.y - 30, 'glitch', 30);
+
+                    screenShake = 40;
+                    hitstop = 15;
+                    slowMotion = 0.1;
+                    setTimeout(() => { slowMotion = 1; }, 500);
                 }
             }
 
             // Spawn new TODOs ahead
             if (deletedAny) {
                 setTimeout(() => {
-                    for (let i = 0; i < 2; i++) {
+                    for (let i = 0; i < 3; i++) {
                         spawnTodoBlock(
-                            raanman.x + 800 + Math.random() * 500,
-                            280 + Math.random() * 120
+                            raanman.x + 800 + Math.random() * 600,
+                            260 + Math.random() * 140
                         );
                     }
                 }, 2000);
@@ -1341,11 +1590,16 @@
             health -= amount;
             combo = 1;
             raanman.invincible = 90;
-            screenShake = 15;
-            screenFlash = { intensity: 0.5, color: '#ff0055' };
-            hitstop = 8;
+            screenShake = 25;
+            screenFlash = { intensity: 0.7, color: '#ff0055' };
+            hitstop = 12;
+            glitchIntensity = 0.8;
 
-            createParticles(raanman.x + 15, raanman.y - 22, 'damage', 15);
+            // PAINFUL particle effects
+            createParticleBurst(raanman.x + 15, raanman.y - 22, 'hack', 40, 'explosion');
+            createParticles(raanman.x + 15, raanman.y - 22, 'damage', 35);
+            createParticles(raanman.x + 15, raanman.y - 22, 'spark', 25);
+            createParticles(raanman.x + 15, raanman.y - 22, 'glitch', 20);
 
             // Knockback
             raanman.vx = raanman.facingRight ? -8 : 8;
@@ -1368,18 +1622,37 @@
                 const dy = (raanman.y - 22) - f.baseY;
                 const dist = Math.sqrt(dx * dx + dy * dy);
 
-                if (dist < 35) {
+                if (dist < 40) {
                     f.collected = true;
-                    const points = f.type === 'super' ? 150 : 50;
+                    const points = f.type === 'super' ? 200 : 50;
                     score += points * combo;
                     combo++;
                     if (combo > maxCombo) maxCombo = combo;
-                    hackMeter = Math.min(100, hackMeter + (f.type === 'super' ? 50 : 20));
+                    hackMeter = Math.min(100, hackMeter + (f.type === 'super' ? 60 : 25));
                     optimizationsCollected++;
 
-                    createParticles(f.x, f.baseY, 'collect', f.type === 'super' ? 20 : 12);
-                    screenShake = f.type === 'super' ? 8 : 4;
-                    screenFlash = { intensity: 0.2, color: '#00ff88' };
+                    // JUICY COLLECTION EFFECTS
+                    if (f.type === 'super') {
+                        // SUPER fragment - massive effects
+                        createParticleBurst(f.x, f.baseY, 'optimization', 50, 'explosion');
+                        createParticles(f.x, f.baseY, 'collect', 40);
+                        createParticles(f.x, f.baseY, 'star', 30);
+                        createParticles(f.x, f.baseY, 'spark', 25);
+                        createParticles(f.x, f.baseY, 'code', 20);
+                        screenShake = 15;
+                        screenFlash = { intensity: 0.5, color: '#ffff00' };
+                        glitchIntensity = 0.4;
+                        hitstop = 5;
+                        slowMotion = 0.5;
+                        setTimeout(() => { slowMotion = 1; }, 150);
+                    } else {
+                        // Normal fragment - still satisfying
+                        createParticles(f.x, f.baseY, 'collect', 25);
+                        createParticles(f.x, f.baseY, 'star', 15);
+                        createParticles(f.x, f.baseY, 'spark', 10);
+                        screenShake = 6;
+                        screenFlash = { intensity: 0.25, color: '#00ff88' };
+                    }
 
                     // Spawn new fragment ahead
                     setTimeout(() => {
@@ -1727,8 +2000,8 @@
         }
 
         function drawUI() {
-            // Update HTML UI
-            scoreElement.textContent = score.toLocaleString();
+            // Update HTML UI with total score (current + previous levels)
+            scoreElement.textContent = (score + (typeof totalRunScore !== 'undefined' ? totalRunScore : 0)).toLocaleString();
             comboElement.textContent = 'x' + combo;
             comboElement.style.color = combo > 10 ? '#ff00ff' : combo > 5 ? '#ffff00' : '#888';
             comboElement.style.textShadow = combo > 5 ? `0 0 10px ${combo > 10 ? '#ff00ff' : '#ffff00'}` : 'none';
@@ -1745,13 +2018,17 @@
             healthElement.textContent = healthStr;
             healthElement.style.color = health > 60 ? '#00ff88' : health > 30 ? '#ffff00' : '#ff0055';
 
-            // Screen flash
-            if (screenFlash.intensity > 0) {
-                ctx.fillStyle = screenFlash.color;
-                ctx.globalAlpha = screenFlash.intensity * 0.3;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.globalAlpha = 1;
-                screenFlash.intensity *= 0.85;
+            // Draw level indicator on canvas
+            if (typeof currentLevel !== 'undefined' && typeof getLevelConfig === 'function') {
+                ctx.fillStyle = '#00ffff';
+                ctx.font = 'bold 14px Courier New';
+                ctx.textAlign = 'left';
+                ctx.fillText(`LEVEL ${currentLevel}: ${getLevelConfig().name}`, 10, 20);
+
+                // Draw run counter
+                ctx.fillStyle = '#888';
+                ctx.font = '10px Courier New';
+                ctx.fillText(`RUN #${currentRun || 1}`, 10, 35);
             }
         }
 
@@ -1802,6 +2079,11 @@
 
             generateLevel();
 
+            // Initialize background particles
+            backgroundParticles = [];
+            trailParticles = [];
+            initBackgroundParticles();
+
             gameState = 'playing';
             startOverlay.classList.remove('active');
             gameOverlay.classList.remove('active');
@@ -1816,8 +2098,50 @@
             optimizationsElement.textContent = optimizationsCollected;
             bossesDefeatedElement.textContent = bossesDefeated;
             gameOverlay.classList.add('active');
-            screenShake = 30;
-            glitchIntensity = 1;
+
+            // DRAMATIC DEATH EFFECTS
+            screenShake = 60;
+            glitchIntensity = 2;
+            screenFlash = { intensity: 1, color: '#ff0055' };
+            slowMotion = 0.1;
+
+            // Death explosion from Raanman
+            createParticleBurst(raanman.x + 15, raanman.y - 22, 'hack', 80, 'explosion');
+            createParticles(raanman.x + 15, raanman.y - 22, 'damage', 60);
+            createParticles(raanman.x + 15, raanman.y - 22, 'glitch', 50);
+            createParticles(raanman.x + 15, raanman.y - 22, 'spark', 40);
+
+            // Cascading death waves
+            for (let i = 0; i < 10; i++) {
+                setTimeout(() => {
+                    const angle = (Math.PI * 2 * i / 10);
+                    const dist = 50 + i * 30;
+                    createParticleBurst(
+                        raanman.x + 15 + Math.cos(angle) * dist,
+                        raanman.y - 22 + Math.sin(angle) * dist,
+                        'damage', 30, 'explosion'
+                    );
+                    createParticles(
+                        raanman.x + 15 + Math.cos(angle) * dist,
+                        raanman.y - 22 + Math.sin(angle) * dist,
+                        'glitch', 20
+                    );
+                    screenShake = 40 - i * 3;
+                    if (i % 2 === 0) {
+                        screenFlash = { intensity: 0.6 - i * 0.05, color: '#ff0055' };
+                    }
+                }, i * 100);
+            }
+
+            // Final static
+            setTimeout(() => {
+                createParticles(canvas.width/2 + cameraX, canvas.height/2, 'binary', 100);
+                createParticles(canvas.width/2 + cameraX, canvas.height/2, 'code', 80);
+                slowMotion = 1;
+            }, 1200);
+
+            // Save to leaderboard
+            saveToLeaderboard();
         }
 
         function victory() {
@@ -1825,69 +2149,72 @@
             victoryScoreElement.textContent = score.toLocaleString();
             victoryOverlay.classList.add('active');
             screenFlash = { intensity: 1, color: '#00ff88' };
+            slowMotion = 0.3;
 
-            // Victory particles
+            // MASSIVE VICTORY CELEBRATION
+            // Firework bursts across the screen
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const x = randomRange(50, canvas.width - 50) + cameraX;
+                    const y = randomRange(50, canvas.height - 150);
+                    createParticleBurst(x, y, 'optimization', 60, 'explosion');
+                    createParticles(x, y, 'star', 40);
+                    createParticles(x, y, 'spark', 30);
+                    screenShake = 15 + Math.random() * 10;
+                    if (i % 3 === 0) {
+                        screenFlash = { intensity: 0.5, color: ['#00ff88', '#ff00ff', '#00ffff', '#ffff00'][i % 4] };
+                    }
+                }, i * 150);
+            }
+
+            // Rising optimization particles
+            for (let i = 0; i < 15; i++) {
+                setTimeout(() => {
+                    const x = randomRange(0, canvas.width) + cameraX;
+                    createParticles(x, canvas.height, 'collect', 50);
+                    createParticles(x, canvas.height, 'star', 30);
+                }, i * 100);
+            }
+
+            // Binary rain celebration
+            for (let i = 0; i < 30; i++) {
+                setTimeout(() => {
+                    createParticles(randomRange(0, canvas.width) + cameraX, -20, 'binary', 15);
+                    createParticles(randomRange(0, canvas.width) + cameraX, -20, 'code', 10);
+                }, i * 50);
+            }
+
+            // Raanman ascension glow
             for (let i = 0; i < 10; i++) {
                 setTimeout(() => {
-                    createParticles(
-                        randomRange(100, canvas.width - 100),
-                        randomRange(100, canvas.height - 100),
-                        'optimization', 30
+                    createParticleBurst(raanman.x + 15, raanman.y - 22 - i * 10, 'optimization', 40, 'ring');
+                    createParticles(raanman.x + 15, raanman.y - 22 - i * 10, 'glitch', 15);
+                }, i * 120);
+            }
+
+            // Final celebration burst
+            setTimeout(() => {
+                for (let i = 0; i < 8; i++) {
+                    const angle = (Math.PI * 2 * i / 8);
+                    createParticleBurst(
+                        raanman.x + 15 + Math.cos(angle) * 100,
+                        raanman.y - 22 + Math.sin(angle) * 100,
+                        'optimization', 80, 'explosion'
                     );
-                }, i * 200);
-            }
-        }
-
-        // ============================================
-        // MAIN GAME LOOP
-        // ============================================
-        function gameLoop() {
-            time++;
-
-            // Screen shake
-            let shakeX = 0, shakeY = 0;
-            if (screenShake > 0) {
-                shakeX = randomRange(-1, 1) * screenShake;
-                shakeY = randomRange(-1, 1) * screenShake;
-                screenShake *= 0.9;
-                if (screenShake < 0.5) screenShake = 0;
-            }
-
-            ctx.save();
-            ctx.translate(shakeX, shakeY);
-
-            drawBackground();
-
-            if (gameState === 'playing') {
-                updateRaanman();
-                updateBugs();
-                updateFragments();
-                updateTodoBlocks();
-                updateBoss();
-                updateProjectiles();
-                checkCollisions();
-                updateParticles();
-
-                // Combo decay
-                if (time % 240 === 0 && combo > 1) {
-                    combo = Math.max(1, combo - 1);
                 }
-            }
+                screenFlash = { intensity: 1, color: '#ffffff' };
+                screenShake = 50;
+                slowMotion = 1;
+            }, 2500);
 
-            drawPlatforms();
-            drawFragments();
-            drawTodoBlocks();
-            drawBugs();
-            drawProjectiles();
-            drawBoss();
-            drawParticles();
-            drawRaanman();
-            drawUI();
-
-            ctx.restore();
-
-            requestAnimationFrame(gameLoop);
+            // Save to leaderboard
+            saveToLeaderboard();
         }
+
+        // ============================================
+        // MAIN GAME LOOP (defined later with enhanced features)
+        // ============================================
+        let gameLoop; // Will be defined after all systems are ready
 
         // ============================================
         // INPUT HANDLING
@@ -1899,7 +2226,7 @@
             if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
             if (e.key === ' ') { keys.jump = true; e.preventDefault(); }
             if (e.key === 'e' || e.key === 'E') keys.hack = true;
-            if (e.key === 't' || e.key === 'T') runTests();
+            if (e.key === 't' || e.key === 'T') { e.preventDefault(); runTests(); }
 
             if (e.key === 'Enter') {
                 if (gameState !== 'playing') {
@@ -2233,6 +2560,767 @@
                 toggleFullscreen();
             }
         });
+
+        // ============================================
+        // DYNAMIC LIGHTING SYSTEM
+        // ============================================
+        const lights = [];
+        const MAX_LIGHTS = 20;
+
+        function addLight(x, y, radius, color, intensity = 1, decay = 0) {
+            if (lights.length >= MAX_LIGHTS) {
+                // Remove oldest light
+                lights.shift();
+            }
+            lights.push({ x, y, radius, color, intensity, decay, originalIntensity: intensity });
+        }
+
+        function updateLights() {
+            // Update and remove decayed lights
+            for (let i = lights.length - 1; i >= 0; i--) {
+                if (lights[i].decay > 0) {
+                    lights[i].intensity -= lights[i].decay;
+                    if (lights[i].intensity <= 0) {
+                        lights.splice(i, 1);
+                    }
+                }
+            }
+        }
+
+        function drawLightingLayer() {
+            // Create a separate canvas for lighting
+            const lightCanvas = document.createElement('canvas');
+            lightCanvas.width = canvas.width;
+            lightCanvas.height = canvas.height;
+            const lightCtx = lightCanvas.getContext('2d');
+
+            // Start with darkness
+            lightCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            lightCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Set blend mode to subtract light
+            lightCtx.globalCompositeOperation = 'destination-out';
+
+            // Raanman emits green optimization light
+            const raanmanScreenX = raanman.x - cameraX + 15;
+            const raanmanScreenY = raanman.y - 22;
+            const raanmanLightRadius = 120 + (combo * 5) + Math.sin(time * 0.1) * 10;
+            const raanmanGrad = lightCtx.createRadialGradient(
+                raanmanScreenX, raanmanScreenY, 0,
+                raanmanScreenX, raanmanScreenY, raanmanLightRadius
+            );
+            raanmanGrad.addColorStop(0, 'rgba(0, 255, 136, 1)');
+            raanmanGrad.addColorStop(0.4, 'rgba(0, 255, 136, 0.6)');
+            raanmanGrad.addColorStop(1, 'rgba(0, 255, 136, 0)');
+            lightCtx.fillStyle = raanmanGrad;
+            lightCtx.beginPath();
+            lightCtx.arc(raanmanScreenX, raanmanScreenY, raanmanLightRadius, 0, Math.PI * 2);
+            lightCtx.fill();
+
+            // Extra glow when hacking
+            if (raanman.isHacking) {
+                const hackRadius = 200 + Math.sin(time * 0.3) * 30;
+                const hackGrad = lightCtx.createRadialGradient(
+                    raanmanScreenX, raanmanScreenY, 0,
+                    raanmanScreenX, raanmanScreenY, hackRadius
+                );
+                hackGrad.addColorStop(0, 'rgba(255, 0, 255, 1)');
+                hackGrad.addColorStop(0.5, 'rgba(255, 0, 255, 0.5)');
+                hackGrad.addColorStop(1, 'rgba(255, 0, 255, 0)');
+                lightCtx.fillStyle = hackGrad;
+                lightCtx.beginPath();
+                lightCtx.arc(raanmanScreenX, raanmanScreenY, hackRadius, 0, Math.PI * 2);
+                lightCtx.fill();
+            }
+
+            // Fragments emit light
+            fragments.forEach(f => {
+                if (f.collected) return;
+                const fx = f.x - cameraX;
+                const fy = f.baseY + Math.sin(time * 0.05 + f.pulse) * 6;
+                const fragRadius = f.type === 'super' ? 80 : 50;
+                const fragColor = f.type === 'super' ? '255, 255, 0' : '0, 255, 136';
+                const fragGrad = lightCtx.createRadialGradient(fx, fy, 0, fx, fy, fragRadius);
+                fragGrad.addColorStop(0, `rgba(${fragColor}, 0.8)`);
+                fragGrad.addColorStop(1, `rgba(${fragColor}, 0)`);
+                lightCtx.fillStyle = fragGrad;
+                lightCtx.beginPath();
+                lightCtx.arc(fx, fy, fragRadius, 0, Math.PI * 2);
+                lightCtx.fill();
+            });
+
+            // TODO blocks emit ominous red light
+            todoBlocks.forEach(t => {
+                if (t.deleted) return;
+                const tx = t.x - cameraX + t.width/2;
+                const ty = t.y + t.height/2;
+                const todoRadius = 60 + Math.sin(t.glowPhase) * 10;
+                const todoGrad = lightCtx.createRadialGradient(tx, ty, 0, tx, ty, todoRadius);
+                todoGrad.addColorStop(0, 'rgba(255, 0, 85, 0.6)');
+                todoGrad.addColorStop(1, 'rgba(255, 0, 85, 0)');
+                lightCtx.fillStyle = todoGrad;
+                lightCtx.beginPath();
+                lightCtx.arc(tx, ty, todoRadius, 0, Math.PI * 2);
+                lightCtx.fill();
+            });
+
+            // Bugs emit small red light
+            bugs.forEach(b => {
+                const bx = b.x - cameraX;
+                const by = b.y;
+                const bugGrad = lightCtx.createRadialGradient(bx, by, 0, bx, by, 40);
+                bugGrad.addColorStop(0, 'rgba(255, 0, 85, 0.5)');
+                bugGrad.addColorStop(1, 'rgba(255, 0, 85, 0)');
+                lightCtx.fillStyle = bugGrad;
+                lightCtx.beginPath();
+                lightCtx.arc(bx, by, 40, 0, Math.PI * 2);
+                lightCtx.fill();
+            });
+
+            // Boss emits powerful light
+            if (currentBoss && currentBoss.active) {
+                const bx = currentBoss.x - cameraX;
+                const by = currentBoss.y - 30;
+                const bossRadius = 150 + Math.sin(time * 0.15) * 20;
+                const bossColor = currentBoss.name === 'SPERRING' ? '255, 136, 0' : '0, 136, 255';
+                const bossGrad = lightCtx.createRadialGradient(bx, by, 0, bx, by, bossRadius);
+                bossGrad.addColorStop(0, `rgba(${bossColor}, 0.8)`);
+                bossGrad.addColorStop(0.5, `rgba(${bossColor}, 0.4)`);
+                bossGrad.addColorStop(1, `rgba(${bossColor}, 0)`);
+                lightCtx.fillStyle = bossGrad;
+                lightCtx.beginPath();
+                lightCtx.arc(bx, by, bossRadius, 0, Math.PI * 2);
+                lightCtx.fill();
+            }
+
+            // Dynamic lights (explosions, effects)
+            lights.forEach(light => {
+                const lx = light.x - cameraX;
+                const ly = light.y;
+                const lGrad = lightCtx.createRadialGradient(lx, ly, 0, lx, ly, light.radius);
+                lGrad.addColorStop(0, `rgba(${light.color}, ${light.intensity})`);
+                lGrad.addColorStop(1, `rgba(${light.color}, 0)`);
+                lightCtx.fillStyle = lGrad;
+                lightCtx.beginPath();
+                lightCtx.arc(lx, ly, light.radius, 0, Math.PI * 2);
+                lightCtx.fill();
+            });
+
+            // Apply lighting layer to main canvas
+            ctx.globalCompositeOperation = 'multiply';
+            ctx.drawImage(lightCanvas, 0, 0);
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
+        // ============================================
+        // DESTRUCTIBLE OBJECTS
+        // ============================================
+        let destructibles = [];
+
+        function spawnDestructible(x, y, type = 'crate') {
+            const configs = {
+                crate: { width: 40, height: 40, health: 30, color: '#8B4513', reward: 25 },
+                barrel: { width: 35, height: 50, health: 20, color: '#444444', reward: 15 },
+                terminal: { width: 50, height: 60, health: 50, color: '#1a1a2e', reward: 50 },
+                server: { width: 45, height: 70, health: 80, color: '#2a2a4e', reward: 100 }
+            };
+            const config = configs[type] || configs.crate;
+
+            destructibles.push({
+                x, y,
+                width: config.width,
+                height: config.height,
+                health: config.health,
+                maxHealth: config.health,
+                type,
+                color: config.color,
+                reward: config.reward,
+                shakeOffset: 0,
+                destroyed: false
+            });
+        }
+
+        function updateDestructibles() {
+            destructibles.forEach(d => {
+                if (d.destroyed) return;
+                d.shakeOffset *= 0.9;
+
+                // Check collision with Raanman for damage
+                if (raanman.isHacking) {
+                    const dx = (raanman.x + 15) - (d.x + d.width/2);
+                    const dy = (raanman.y - 22) - (d.y + d.height/2);
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 150) {
+                        d.health -= 2;
+                        d.shakeOffset = 8;
+                        createParticles(d.x + d.width/2, d.y + d.height/2, 'spark', 3);
+                    }
+                }
+
+                // Destroy if health depleted
+                if (d.health <= 0) {
+                    destroyObject(d);
+                }
+            });
+
+            // Clean up destroyed objects
+            destructibles = destructibles.filter(d => !d.destroyed);
+        }
+
+        function destroyObject(d) {
+            d.destroyed = true;
+            score += d.reward * combo;
+
+            // DESTRUCTION EFFECTS
+            screenShake = 15;
+            createParticleBurst(d.x + d.width/2, d.y + d.height/2, 'boss', 40, 'explosion');
+            createParticles(d.x + d.width/2, d.y + d.height/2, 'spark', 30);
+            createParticles(d.x + d.width/2, d.y + d.height/2, 'smoke', 15);
+
+            // Add light flash
+            addLight(d.x + d.width/2, d.y + d.height/2, 100, '255, 200, 100', 1, 0.05);
+
+            // Spawn debris particles
+            for (let i = 0; i < 8; i++) {
+                createParticles(
+                    d.x + randomRange(0, d.width),
+                    d.y + randomRange(0, d.height),
+                    'landing', 5
+                );
+            }
+
+            // Maybe drop a fragment
+            if (Math.random() > 0.6) {
+                spawnFragment(d.x + d.width/2, d.y - 20);
+            }
+
+            // Maybe charge hack meter
+            hackMeter = Math.min(100, hackMeter + 10);
+        }
+
+        function drawDestructibles() {
+            destructibles.forEach(d => {
+                if (d.destroyed) return;
+                const dx = d.x - cameraX + d.shakeOffset * randomRange(-1, 1);
+                const dy = d.y;
+
+                ctx.save();
+
+                if (d.type === 'crate') {
+                    // Wooden crate
+                    ctx.fillStyle = d.color;
+                    ctx.fillRect(dx, dy, d.width, d.height);
+                    ctx.strokeStyle = '#5a3010';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(dx, dy, d.width, d.height);
+                    ctx.beginPath();
+                    ctx.moveTo(dx, dy);
+                    ctx.lineTo(dx + d.width, dy + d.height);
+                    ctx.moveTo(dx + d.width, dy);
+                    ctx.lineTo(dx, dy + d.height);
+                    ctx.stroke();
+                } else if (d.type === 'barrel') {
+                    // Metal barrel
+                    ctx.fillStyle = d.color;
+                    ctx.beginPath();
+                    ctx.ellipse(dx + d.width/2, dy + d.height, d.width/2, 10, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillRect(dx, dy, d.width, d.height);
+                    ctx.beginPath();
+                    ctx.ellipse(dx + d.width/2, dy, d.width/2, 10, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#666';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(dx, dy + d.height * 0.3);
+                    ctx.lineTo(dx + d.width, dy + d.height * 0.3);
+                    ctx.moveTo(dx, dy + d.height * 0.7);
+                    ctx.lineTo(dx + d.width, dy + d.height * 0.7);
+                    ctx.stroke();
+                } else if (d.type === 'terminal') {
+                    // Computer terminal
+                    ctx.fillStyle = d.color;
+                    ctx.fillRect(dx, dy, d.width, d.height);
+                    ctx.fillStyle = '#001100';
+                    ctx.fillRect(dx + 5, dy + 5, d.width - 10, d.height * 0.6);
+                    // Screen glow
+                    ctx.fillStyle = `rgba(0, 255, 136, ${0.3 + Math.sin(time * 0.1) * 0.1})`;
+                    ctx.fillRect(dx + 5, dy + 5, d.width - 10, d.height * 0.6);
+                    // Screen text
+                    ctx.fillStyle = '#00ff88';
+                    ctx.font = '8px Courier New';
+                    ctx.fillText('> _', dx + 8, dy + 20);
+                } else if (d.type === 'server') {
+                    // Server rack
+                    ctx.fillStyle = d.color;
+                    ctx.fillRect(dx, dy, d.width, d.height);
+                    // Blinking lights
+                    for (let i = 0; i < 5; i++) {
+                        ctx.fillStyle = Math.sin(time * 0.2 + i) > 0 ? '#00ff88' : '#003311';
+                        ctx.fillRect(dx + 5, dy + 10 + i * 12, 5, 3);
+                        ctx.fillStyle = Math.sin(time * 0.3 + i * 0.5) > 0 ? '#ff8800' : '#331100';
+                        ctx.fillRect(dx + 12, dy + 10 + i * 12, 5, 3);
+                    }
+                }
+
+                // Health bar
+                if (d.health < d.maxHealth) {
+                    const healthPct = d.health / d.maxHealth;
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(dx, dy - 8, d.width, 4);
+                    ctx.fillStyle = healthPct > 0.5 ? '#00ff88' : healthPct > 0.25 ? '#ffaa00' : '#ff0055';
+                    ctx.fillRect(dx, dy - 8, d.width * healthPct, 4);
+                }
+
+                ctx.restore();
+            });
+        }
+
+        // ============================================
+        // ROGUELIKE PROGRESSION SYSTEM
+        // ============================================
+        let currentLevel = 1;
+        let currentRun = 0;
+        let totalRunScore = 0;
+        let upgrades = {
+            speed: 0,
+            jumpForce: 0,
+            hackPower: 0,
+            maxHealth: 0
+        };
+        const levelConfigs = [
+            { name: 'BOOT SECTOR', enemies: 3, todos: 5, destructibles: 5, bossAt: 2000 },
+            { name: 'STACK OVERFLOW', enemies: 5, todos: 8, destructibles: 8, bossAt: 1800 },
+            { name: 'MEMORY LEAK', enemies: 7, todos: 10, destructibles: 10, bossAt: 1600 },
+            { name: 'RACE CONDITION', enemies: 10, todos: 12, destructibles: 12, bossAt: 1400 },
+            { name: 'KERNEL PANIC', enemies: 12, todos: 15, destructibles: 15, bossAt: 1200 }
+        ];
+
+        function getLevelConfig() {
+            const idx = Math.min(currentLevel - 1, levelConfigs.length - 1);
+            const config = { ...levelConfigs[idx] };
+
+            // Scale difficulty with level beyond the configs
+            if (currentLevel > levelConfigs.length) {
+                const scaleFactor = 1 + (currentLevel - levelConfigs.length) * 0.2;
+                config.enemies = Math.floor(config.enemies * scaleFactor);
+                config.todos = Math.floor(config.todos * scaleFactor);
+                config.destructibles = Math.floor(config.destructibles * scaleFactor);
+                config.bossAt = Math.max(800, config.bossAt - (currentLevel - levelConfigs.length) * 100);
+            }
+
+            return config;
+        }
+
+        function startNewRun() {
+            currentRun++;
+            currentLevel = 1;
+            totalRunScore = 0;
+
+            // Apply upgrades
+            raanman.speed = 6 + upgrades.speed * 0.5;
+            raanman.jumpForce = -16 - upgrades.jumpForce * 1;
+            maxHealth = 100 + upgrades.maxHealth * 20;
+
+            initGame();
+        }
+
+        function advanceLevel() {
+            currentLevel++;
+            totalRunScore += score;
+            score = 0;
+
+            // Heal player between levels
+            health = Math.min(maxHealth, health + 30);
+
+            // Generate new level with updated config
+            generateRoguelikeLevel();
+
+            // Level transition effects
+            screenFlash = { intensity: 1, color: '#00ffff' };
+            screenShake = 30;
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    createParticles(randomRange(100, 700), randomRange(100, 400), 'star', 30);
+                }, i * 100);
+            }
+        }
+
+        function generateRoguelikeLevel() {
+            const config = getLevelConfig();
+
+            platforms = [];
+            fragments = [];
+            todoBlocks = [];
+            bugs = [];
+            destructibles = [];
+            projectiles = [];
+
+            // Reset position
+            raanman.x = 100;
+            raanman.y = 400;
+            cameraX = 0;
+
+            // Generate terrain
+            let groundX = 0;
+            for (let i = 0; i < 25 + currentLevel * 3; i++) {
+                const width = randomRange(120, 350);
+                platforms.push({ x: groundX, y: 450, width: width, height: 50, type: 'ground' });
+                groundX += width + randomRange(60, 180);
+            }
+
+            // Floating platforms
+            for (let i = 0; i < 30 + currentLevel * 2; i++) {
+                platforms.push({
+                    x: 150 + i * randomRange(130, 220),
+                    y: randomRange(240, 380),
+                    width: randomRange(70, 160),
+                    height: 20,
+                    type: 'floating'
+                });
+            }
+
+            // Spawn fragments
+            for (let i = 0; i < 20 + currentLevel * 2; i++) {
+                spawnFragment(250 + i * randomRange(180, 320), randomRange(170, 340));
+            }
+
+            // Spawn TODO blocks
+            for (let i = 0; i < config.todos; i++) {
+                spawnTodoBlock(350 + i * randomRange(250, 450), randomRange(270, 390));
+            }
+
+            // Spawn bugs
+            for (let i = 0; i < config.enemies; i++) {
+                const plat = platforms[Math.floor(Math.random() * platforms.length)];
+                if (plat && plat.y < 450) {
+                    spawnBug(plat.x + plat.width/2, plat.y - 15, Math.random() > 0.5 ? 1 : -1, plat);
+                }
+            }
+
+            // Spawn destructibles
+            for (let i = 0; i < config.destructibles; i++) {
+                const plat = platforms[Math.floor(Math.random() * platforms.length)];
+                if (plat) {
+                    const types = ['crate', 'barrel', 'terminal', 'server'];
+                    spawnDestructible(
+                        plat.x + randomRange(20, plat.width - 60),
+                        plat.y - (types[i % types.length] === 'server' ? 70 : 40),
+                        types[i % types.length]
+                    );
+                }
+            }
+
+            // Reset bosses for this level
+            bosses.sperring.active = false;
+            bosses.sperring.defeated = currentLevel % 2 !== 0; // Sperring on odd levels
+            bosses.sydney.active = false;
+            bosses.sydney.defeated = currentLevel % 2 === 0; // Sydney on even levels
+
+            // Alternate which boss spawns
+            if (currentLevel % 2 === 1) {
+                bosses.sperring.defeated = false;
+                bosses.sperring.health = bosses.sperring.maxHealth + currentLevel * 20;
+            } else {
+                bosses.sydney.defeated = false;
+                bosses.sydney.health = bosses.sydney.maxHealth + currentLevel * 30;
+            }
+        }
+
+        // Override boss defeat to advance level
+        const originalDefeatBoss = defeatBoss;
+        defeatBoss = function(boss) {
+            originalDefeatBoss(boss);
+
+            // After boss is defeated, advance to next level
+            setTimeout(() => {
+                if (gameState === 'playing') {
+                    advanceLevel();
+                }
+            }, 3000);
+        };
+
+        // ============================================
+        // LEADERBOARD SYSTEM
+        // ============================================
+        let playerName = 'ANONYMOUS';
+        let playerId = null;
+        let leaderboard = [];
+
+        // Generate unique player ID (using localStorage)
+        function getPlayerId() {
+            let id = localStorage.getItem('raanman_player_id');
+            if (!id) {
+                id = 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('raanman_player_id', id);
+            }
+            return id;
+        }
+
+        function getPlayerName() {
+            const stored = localStorage.getItem('raanman_player_name');
+            if (stored) {
+                playerName = stored;
+            } else {
+                // Default name based on ID
+                playerName = 'PLAYER_' + getPlayerId().substr(-6).toUpperCase();
+            }
+            return playerName;
+        }
+
+        function setPlayerName(name) {
+            playerName = name.trim().toUpperCase().substr(0, 15) || 'ANONYMOUS';
+            localStorage.setItem('raanman_player_name', playerName);
+        }
+
+        function loadLeaderboard() {
+            const stored = localStorage.getItem('raanman_leaderboard');
+            if (stored) {
+                try {
+                    leaderboard = JSON.parse(stored);
+                } catch (e) {
+                    leaderboard = [];
+                }
+            }
+        }
+
+        function saveToLeaderboard() {
+            const entry = {
+                id: getPlayerId(),
+                name: getPlayerName(),
+                score: score + totalRunScore,
+                level: currentLevel,
+                todosDeleted: todosDeleted,
+                maxCombo: maxCombo,
+                bossesDefeated: bossesDefeated,
+                timestamp: Date.now()
+            };
+
+            loadLeaderboard();
+
+            // Find if player already has an entry
+            const existingIdx = leaderboard.findIndex(e => e.id === entry.id);
+            if (existingIdx >= 0) {
+                // Update if new score is higher
+                if (entry.score > leaderboard[existingIdx].score) {
+                    leaderboard[existingIdx] = entry;
+                }
+            } else {
+                leaderboard.push(entry);
+            }
+
+            // Sort by score
+            leaderboard.sort((a, b) => b.score - a.score);
+
+            // Keep top 100
+            leaderboard = leaderboard.slice(0, 100);
+
+            localStorage.setItem('raanman_leaderboard', JSON.stringify(leaderboard));
+        }
+
+        function drawLeaderboard() {
+            loadLeaderboard();
+
+            const overlay = document.getElementById('gameOverlay');
+            const leaderboardHtml = `
+                <div style="margin-top: 20px; max-height: 200px; overflow-y: auto; font-size: 12px;">
+                    <div style="color: #00ff88; margin-bottom: 10px;">LEADERBOARD</div>
+                    ${leaderboard.slice(0, 10).map((e, i) => `
+                        <div style="color: ${e.id === getPlayerId() ? '#ffff00' : '#888'};">
+                            ${i + 1}. ${e.name} - ${e.score.toLocaleString()} (Lvl ${e.level})
+                        </div>
+                    `).join('')}
+                </div>
+                <div style="margin-top: 15px;">
+                    <input id="nameInput" type="text" value="${getPlayerName()}"
+                           style="background: #111; border: 1px solid #00ff88; color: #00ff88;
+                                  padding: 5px 10px; font-family: 'Courier New'; width: 150px;"
+                           maxlength="15" placeholder="Your name">
+                    <button id="saveNameBtn"
+                            style="background: #00ff88; border: none; color: #0a0a0f;
+                                   padding: 5px 10px; cursor: pointer; font-family: 'Courier New';">
+                        SAVE
+                    </button>
+                </div>
+            `;
+
+            // Insert leaderboard after stats
+            const statsDiv = overlay.querySelector('.stats');
+            let leaderDiv = overlay.querySelector('.leaderboard-section');
+            if (!leaderDiv) {
+                leaderDiv = document.createElement('div');
+                leaderDiv.className = 'leaderboard-section';
+                statsDiv.after(leaderDiv);
+            }
+            leaderDiv.innerHTML = leaderboardHtml;
+
+            // Add save name handler
+            setTimeout(() => {
+                const saveBtn = document.getElementById('saveNameBtn');
+                const nameInput = document.getElementById('nameInput');
+                if (saveBtn && nameInput) {
+                    saveBtn.onclick = () => {
+                        setPlayerName(nameInput.value);
+                        saveToLeaderboard();
+                        drawLeaderboard();
+                    };
+                    nameInput.onkeypress = (e) => {
+                        if (e.key === 'Enter') {
+                            setPlayerName(nameInput.value);
+                            saveToLeaderboard();
+                            drawLeaderboard();
+                        }
+                    };
+                }
+            }, 100);
+        }
+
+        // Initialize player ID and name
+        playerId = getPlayerId();
+        getPlayerName();
+        loadLeaderboard();
+
+        // ============================================
+        // UPDATE GAME LOOP WITH NEW SYSTEMS
+        // ============================================
+        const originalGameLoop = gameLoop;
+        gameLoop = function() {
+            time++;
+
+            // Screen shake
+            let shakeX = 0, shakeY = 0;
+            if (screenShake > 0) {
+                shakeX = randomRange(-1, 1) * screenShake;
+                shakeY = randomRange(-1, 1) * screenShake;
+                screenShake *= 0.9;
+                if (screenShake < 0.5) screenShake = 0;
+            }
+
+            ctx.save();
+            ctx.translate(shakeX, shakeY);
+
+            drawBackground();
+            drawBackgroundParticles();
+
+            if (gameState === 'playing') {
+                updateRaanman();
+                updateBugs();
+                updateFragments();
+                updateTodoBlocks();
+                updateBoss();
+                updateProjectiles();
+                updateDestructibles();
+                updateLights();
+                checkCollisions();
+                updateParticles();
+
+                // Combo decay
+                if (time % 240 === 0 && combo > 1) {
+                    combo = Math.max(1, combo - 1);
+                }
+            }
+
+            drawPlatforms();
+            drawDestructibles();
+            drawFragments();
+            drawTodoBlocks();
+            drawBugs();
+            drawProjectiles();
+            drawBoss();
+            drawParticles();
+            drawRaanman();
+
+            // Apply dynamic lighting
+            drawLightingLayer();
+
+            drawUI();
+
+            // Screen flash effect
+            if (screenFlash.intensity > 0) {
+                ctx.fillStyle = screenFlash.color;
+                ctx.globalAlpha = screenFlash.intensity * 0.5;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.globalAlpha = 1;
+                screenFlash.intensity *= 0.9;
+                if (screenFlash.intensity < 0.01) screenFlash.intensity = 0;
+            }
+
+            ctx.restore();
+
+            requestAnimationFrame(gameLoop);
+        };
+
+
+        // ============================================
+        // ADDITIONAL UNIT TESTS
+        // ============================================
+        const originalRunTests = runTests;
+        runTests = function() {
+            const result = originalRunTests();
+
+            // Add new tests
+            const additionalTests = [];
+            let passed = result.passed;
+            let failed = result.failed;
+
+            function test(name, fn) {
+                try {
+                    if (fn() === true) {
+                        additionalTests.push({ name, status: 'pass' });
+                        passed++;
+                    } else {
+                        additionalTests.push({ name, status: 'fail', error: 'Assertion failed' });
+                        failed++;
+                    }
+                } catch (e) {
+                    additionalTests.push({ name, status: 'fail', error: e.message });
+                    failed++;
+                }
+            }
+
+            // Lighting tests
+            test('lights array exists', () => Array.isArray(lights));
+            test('addLight function exists', () => typeof addLight === 'function');
+            test('addLight creates light', () => {
+                const before = lights.length;
+                addLight(100, 100, 50, '255, 255, 255');
+                return lights.length === before + 1;
+            });
+
+            // Destructible tests
+            test('destructibles array exists', () => Array.isArray(destructibles));
+            test('spawnDestructible function exists', () => typeof spawnDestructible === 'function');
+
+            // Roguelike tests
+            test('currentLevel is at least 1', () => currentLevel >= 1);
+            test('getLevelConfig returns object', () => typeof getLevelConfig() === 'object');
+            test('level config has name', () => getLevelConfig().name !== undefined);
+            test('level config has enemies', () => getLevelConfig().enemies !== undefined);
+
+            // Leaderboard tests
+            test('getPlayerId returns string', () => typeof getPlayerId() === 'string');
+            test('getPlayerName returns string', () => typeof getPlayerName() === 'string');
+            test('leaderboard is array', () => Array.isArray(leaderboard));
+
+            // Update display
+            testResultsDiv.innerHTML = `<strong>Tests: ${passed}/${passed + failed}</strong><br><br>` +
+                [...result.tests, ...additionalTests].map(t =>
+                    `<span class="${t.status === 'pass' ? 'test-pass' : 'test-fail'}">
+                        ${t.status === 'pass' ? '✓' : '✗'} ${t.name}
+                        ${t.error ? `<br>&nbsp;&nbsp;${t.error}` : ''}
+                    </span>`
+                ).join('<br>');
+
+            return { passed, failed, tests: [...result.tests, ...additionalTests] };
+        };
+
+        // Show leaderboard on game over
+        const originalGameOver = gameOver;
+        gameOver = function() {
+            originalGameOver();
+            setTimeout(drawLeaderboard, 500);
+        };
 
         // Start the game loop
         gameLoop();
