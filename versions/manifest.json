@@ -1,0 +1,19 @@
+{
+  "versions": [
+    {
+      "id": "v2",
+      "name": "v2.0 - Roguelike Update",
+      "date": "2026-01-28",
+      "description": "Dynamic lighting, roguelike progression, leaderboard, destructible objects",
+      "file": "v2.html"
+    },
+    {
+      "id": "v1",
+      "name": "v1.0 - Original Release",
+      "date": "2026-01-28",
+      "description": "Original Raanman Legends with bosses, particles, and fullscreen support",
+      "file": "v1.html"
+    }
+  ],
+  "latest": "v2"
+}
