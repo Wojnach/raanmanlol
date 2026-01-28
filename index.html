@@ -2275,35 +2275,326 @@
         // ============================================
         // DRAWING FUNCTIONS
         // ============================================
+        // ============================================
+        // PARALLAX BACKGROUND SHADER SYSTEM
+        // ============================================
+
+        // Pre-generated background elements for performance
+        let bgStars = [];
+        let bgNebulae = [];
+        let bgBuildings = [];
+        let bgMatrixColumns = [];
+        let bgGeometry = [];
+        let bgInitialized = false;
+
+        function initParallaxBackground() {
+            if (bgInitialized) return;
+
+            // Layer 1: Deep space stars (slowest - 0.05 parallax)
+            bgStars = [];
+            for (let i = 0; i < 150; i++) {
+                bgStars.push({
+                    x: Math.random() * 2000,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 0.5,
+                    brightness: Math.random() * 0.5 + 0.3,
+                    twinkleSpeed: Math.random() * 0.05 + 0.02,
+                    twinkleOffset: Math.random() * Math.PI * 2
+                });
+            }
+
+            // Layer 2: Nebula clouds (0.1 parallax)
+            bgNebulae = [];
+            for (let i = 0; i < 8; i++) {
+                bgNebulae.push({
+                    x: i * 300 + Math.random() * 100,
+                    y: Math.random() * canvas.height * 0.7,
+                    width: Math.random() * 200 + 150,
+                    height: Math.random() * 100 + 80,
+                    hue: Math.random() > 0.5 ? 160 : 280, // Cyan or purple
+                    opacity: Math.random() * 0.06 + 0.02
+                });
+            }
+
+            // Layer 3: Distant city silhouettes (0.2 parallax)
+            bgBuildings = [];
+            for (let i = 0; i < 40; i++) {
+                const height = Math.random() * 120 + 40;
+                bgBuildings.push({
+                    x: i * 60 + Math.random() * 30,
+                    width: Math.random() * 30 + 15,
+                    height: height,
+                    windows: Math.floor(height / 20),
+                    windowPattern: Math.random()
+                });
+            }
+
+            // Layer 4: Matrix rain columns (0.3 parallax)
+            bgMatrixColumns = [];
+            for (let i = 0; i < 25; i++) {
+                bgMatrixColumns.push({
+                    x: i * 40 + Math.random() * 20,
+                    chars: [],
+                    speed: Math.random() * 2 + 1,
+                    length: Math.floor(Math.random() * 15) + 8
+                });
+                // Initialize characters
+                for (let j = 0; j < bgMatrixColumns[i].length; j++) {
+                    bgMatrixColumns[i].chars.push({
+                        char: String.fromCharCode(0x30A0 + Math.random() * 96), // Katakana
+                        y: j * 18 - Math.random() * canvas.height,
+                        opacity: 1 - j / bgMatrixColumns[i].length
+                    });
+                }
+            }
+
+            // Layer 5: Floating geometric shapes (0.4 parallax)
+            bgGeometry = [];
+            for (let i = 0; i < 20; i++) {
+                bgGeometry.push({
+                    x: Math.random() * 1500,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 30 + 10,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotationSpeed: (Math.random() - 0.5) * 0.02,
+                    type: Math.floor(Math.random() * 4), // 0: triangle, 1: square, 2: hexagon, 3: circle
+                    opacity: Math.random() * 0.15 + 0.05
+                });
+            }
+
+            bgInitialized = true;
+        }
+
+        function drawParallaxLayer1_Stars() {
+            // Deep space stars with twinkling
+            const parallax = 0.05;
+            const offsetX = cameraX * parallax;
+
+            bgStars.forEach(star => {
+                const x = ((star.x - offsetX) % (canvas.width + 200)) - 100;
+                const twinkle = Math.sin(time * star.twinkleSpeed + star.twinkleOffset) * 0.3 + 0.7;
+                const alpha = star.brightness * twinkle;
+
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                ctx.beginPath();
+                ctx.arc(x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Occasional bright star glow
+                if (star.size > 1.5) {
+                    ctx.fillStyle = `rgba(200, 220, 255, ${alpha * 0.3})`;
+                    ctx.beginPath();
+                    ctx.arc(x, star.y, star.size * 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+        }
+
+        function drawParallaxLayer2_Nebulae() {
+            // Nebula clouds - soft glowing regions
+            const parallax = 0.1;
+            const offsetX = cameraX * parallax;
+
+            bgNebulae.forEach(nebula => {
+                const x = ((nebula.x - offsetX) % (canvas.width + 400)) - 200;
+                const pulse = Math.sin(time * 0.01 + nebula.x * 0.01) * 0.3 + 0.7;
+
+                const gradient = ctx.createRadialGradient(
+                    x + nebula.width/2, nebula.y + nebula.height/2, 0,
+                    x + nebula.width/2, nebula.y + nebula.height/2, nebula.width/2
+                );
+                gradient.addColorStop(0, `hsla(${nebula.hue}, 80%, 50%, ${nebula.opacity * pulse})`);
+                gradient.addColorStop(0.5, `hsla(${nebula.hue}, 60%, 30%, ${nebula.opacity * 0.5 * pulse})`);
+                gradient.addColorStop(1, 'transparent');
+
+                ctx.fillStyle = gradient;
+                ctx.fillRect(x, nebula.y, nebula.width, nebula.height);
+            });
+        }
+
+        function drawParallaxLayer3_City() {
+            // Distant cyberpunk city silhouette
+            const parallax = 0.2;
+            const offsetX = cameraX * parallax;
+            const baseY = canvas.height - 50;
+
+            // City glow on horizon
+            const horizonGlow = ctx.createLinearGradient(0, baseY - 150, 0, baseY);
+            horizonGlow.addColorStop(0, 'transparent');
+            horizonGlow.addColorStop(1, 'rgba(0, 255, 136, 0.05)');
+            ctx.fillStyle = horizonGlow;
+            ctx.fillRect(0, baseY - 150, canvas.width, 150);
+
+            bgBuildings.forEach(building => {
+                const x = ((building.x - offsetX) % (canvas.width + 200)) - 100;
+                const y = baseY - building.height;
+
+                // Building silhouette
+                ctx.fillStyle = '#0a0a12';
+                ctx.fillRect(x, y, building.width, building.height);
+
+                // Windows
+                const windowSize = 3;
+                const windowSpacing = 8;
+                for (let row = 0; row < building.windows; row++) {
+                    for (let col = 0; col < Math.floor(building.width / windowSpacing) - 1; col++) {
+                        // Random window lighting
+                        const isLit = Math.sin(building.windowPattern * 100 + row * 7 + col * 13 + time * 0.001) > 0.3;
+                        if (isLit) {
+                            const flicker = Math.random() > 0.99 ? 0.3 : 1;
+                            ctx.fillStyle = `rgba(0, 255, 136, ${0.3 * flicker})`;
+                            ctx.fillRect(x + 4 + col * windowSpacing, y + 5 + row * 15, windowSize, windowSize * 1.5);
+                        }
+                    }
+                }
+
+                // Antenna/spire on tall buildings
+                if (building.height > 120) {
+                    ctx.strokeStyle = '#0a0a12';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(x + building.width/2, y);
+                    ctx.lineTo(x + building.width/2, y - 20);
+                    ctx.stroke();
+                    // Blinking light
+                    if (Math.sin(time * 0.05 + building.x) > 0.7) {
+                        ctx.fillStyle = 'rgba(255, 0, 100, 0.8)';
+                        ctx.beginPath();
+                        ctx.arc(x + building.width/2, y - 20, 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            });
+        }
+
+        function drawParallaxLayer4_Matrix() {
+            // Matrix-style falling code
+            const parallax = 0.3;
+            const offsetX = cameraX * parallax;
+
+            ctx.font = '14px Courier New';
+
+            bgMatrixColumns.forEach(column => {
+                const x = ((column.x - offsetX) % (canvas.width + 100)) - 50;
+
+                column.chars.forEach((charObj, i) => {
+                    // Update position
+                    charObj.y += column.speed * deltaTime;
+                    if (charObj.y > canvas.height + 20) {
+                        charObj.y = -20;
+                        charObj.char = String.fromCharCode(0x30A0 + Math.random() * 96);
+                    }
+
+                    // Draw character
+                    const alpha = charObj.opacity * (i === 0 ? 1 : 0.4);
+                    ctx.fillStyle = i === 0 ?
+                        `rgba(180, 255, 200, ${alpha})` :
+                        `rgba(0, 255, 136, ${alpha * 0.5})`;
+                    ctx.fillText(charObj.char, x, charObj.y);
+                });
+            });
+        }
+
+        function drawParallaxLayer5_Geometry() {
+            // Floating geometric wireframes
+            const parallax = 0.4;
+            const offsetX = cameraX * parallax;
+
+            bgGeometry.forEach(geo => {
+                const x = ((geo.x - offsetX) % (canvas.width + 300)) - 150;
+                geo.rotation += geo.rotationSpeed * deltaTime;
+
+                ctx.save();
+                ctx.translate(x, geo.y);
+                ctx.rotate(geo.rotation);
+                ctx.strokeStyle = `rgba(0, 255, 136, ${geo.opacity})`;
+                ctx.lineWidth = 1;
+
+                ctx.beginPath();
+                if (geo.type === 0) {
+                    // Triangle
+                    ctx.moveTo(0, -geo.size);
+                    ctx.lineTo(geo.size * 0.866, geo.size * 0.5);
+                    ctx.lineTo(-geo.size * 0.866, geo.size * 0.5);
+                    ctx.closePath();
+                } else if (geo.type === 1) {
+                    // Square
+                    ctx.rect(-geo.size/2, -geo.size/2, geo.size, geo.size);
+                } else if (geo.type === 2) {
+                    // Hexagon
+                    for (let i = 0; i < 6; i++) {
+                        const angle = i * Math.PI / 3;
+                        const px = Math.cos(angle) * geo.size;
+                        const py = Math.sin(angle) * geo.size;
+                        if (i === 0) ctx.moveTo(px, py);
+                        else ctx.lineTo(px, py);
+                    }
+                    ctx.closePath();
+                } else {
+                    // Circle with inner pattern
+                    ctx.arc(0, 0, geo.size, 0, Math.PI * 2);
+                    ctx.moveTo(geo.size * 0.5, 0);
+                    ctx.arc(0, 0, geo.size * 0.5, 0, Math.PI * 2);
+                }
+                ctx.stroke();
+                ctx.restore();
+            });
+        }
+
+        function drawParallaxGrid() {
+            // Enhanced parallax grid with depth
+            const layers = [
+                { spacing: 100, parallax: 0.15, alpha: 0.03 },
+                { spacing: 50, parallax: 0.3, alpha: 0.05 },
+                { spacing: 25, parallax: 0.5, alpha: 0.08 }
+            ];
+
+            layers.forEach(layer => {
+                ctx.strokeStyle = `rgba(0, 255, 136, ${layer.alpha})`;
+                ctx.lineWidth = 1;
+                const offsetX = cameraX * layer.parallax;
+
+                // Vertical lines
+                for (let i = -1; i < canvas.width / layer.spacing + 2; i++) {
+                    const x = (i * layer.spacing) - (offsetX % layer.spacing);
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, canvas.height);
+                    ctx.stroke();
+                }
+                // Horizontal lines
+                for (let i = 0; i < canvas.height / layer.spacing + 1; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, i * layer.spacing);
+                    ctx.lineTo(canvas.width, i * layer.spacing);
+                    ctx.stroke();
+                }
+            });
+        }
+
         function drawBackground() {
-            // Base gradient
+            // Initialize parallax elements if needed
+            initParallaxBackground();
+
+            // Base gradient - deeper space feel
             const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            gradient.addColorStop(0, '#0a0a15');
-            gradient.addColorStop(1, '#151525');
+            gradient.addColorStop(0, '#050510');
+            gradient.addColorStop(0.5, '#0a0a18');
+            gradient.addColorStop(1, '#0f0f20');
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Parallax grid
-            ctx.strokeStyle = '#1a1a2e';
-            ctx.lineWidth = 1;
-            const gridOffset = cameraX * 0.5;
-            for (let i = -1; i < canvas.width / 50 + 2; i++) {
-                const x = (i * 50) - (gridOffset % 50);
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, canvas.height);
-                ctx.stroke();
-            }
-            for (let i = 0; i < canvas.height / 50 + 1; i++) {
-                ctx.beginPath();
-                ctx.moveTo(0, i * 50);
-                ctx.lineTo(canvas.width, i * 50);
-                ctx.stroke();
-            }
+            // Draw parallax layers (back to front)
+            drawParallaxLayer1_Stars();
+            drawParallaxLayer2_Nebulae();
+            drawParallaxGrid();
+            drawParallaxLayer3_City();
+            drawParallaxLayer4_Matrix();
+            drawParallaxLayer5_Geometry();
 
-            // Floating code snippets (parallax)
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
-            ctx.font = '12px Courier New';
+            // Floating code snippets (existing, enhanced)
+            ctx.fillStyle = 'rgba(0, 255, 136, 0.04)';
+            ctx.font = '11px Courier New';
             const codeSnippets = [
                 'function optimize() {',
                 '  return perfection;',
@@ -2317,27 +2608,38 @@
                 '  await enlightenment;',
                 '}'
             ];
-            for (let i = 0; i < 15; i++) {
+            for (let i = 0; i < 12; i++) {
                 const snippet = codeSnippets[i % codeSnippets.length];
-                const parallax = 0.2 + (i % 3) * 0.1;
-                const x = ((i * 180 + 50) - (cameraX * parallax)) % (canvas.width + 400) - 200;
-                const y = 40 + (i * 47) % 420;
+                const parallax = 0.35 + (i % 3) * 0.1;
+                const x = ((i * 200 + 50) - (cameraX * parallax)) % (canvas.width + 400) - 200;
+                const y = 50 + (i * 50) % 380;
                 ctx.fillText(snippet, x, y);
             }
 
-            // Scanlines
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
-            for (let i = 0; i < canvas.height; i += 3) {
+            // Scanlines (subtle)
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            for (let i = 0; i < canvas.height; i += 4) {
                 ctx.fillRect(0, i, canvas.width, 1);
             }
 
+            // CRT curvature effect (subtle)
+            const crtGradient = ctx.createRadialGradient(
+                canvas.width/2, canvas.height/2, 0,
+                canvas.width/2, canvas.height/2, canvas.width * 0.8
+            );
+            crtGradient.addColorStop(0, 'rgba(0, 50, 30, 0)');
+            crtGradient.addColorStop(0.8, 'rgba(0, 20, 15, 0.1)');
+            crtGradient.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
+            ctx.fillStyle = crtGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
             // Vignette
             const vignetteGradient = ctx.createRadialGradient(
-                canvas.width/2, canvas.height/2, canvas.height * 0.3,
-                canvas.width/2, canvas.height/2, canvas.height * 0.8
+                canvas.width/2, canvas.height/2, canvas.height * 0.4,
+                canvas.width/2, canvas.height/2, canvas.height * 0.9
             );
             vignetteGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
-            vignetteGradient.addColorStop(1, 'rgba(0, 0, 0, 0.4)');
+            vignetteGradient.addColorStop(1, 'rgba(0, 0, 0, 0.5)');
             ctx.fillStyle = vignetteGradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -3687,18 +3989,17 @@
         };
 
         // ============================================
-        // LEADERBOARD SYSTEM (Shared Online via jsonbox.io)
+        // LEADERBOARD SYSTEM (Shared Online via JSONBin.io)
         // ============================================
-        // Uses jsonbox.io - a free JSON storage that requires no API keys
-        // Data is stored in a unique box identified by the box ID below
         let playerName = 'ANONYMOUS';
         let playerId = null;
         let leaderboard = [];
         let leaderboardLoading = false;
 
-        // Unique box ID for this game's leaderboard (auto-generated, don't change)
-        const LEADERBOARD_BOX = 'raanman_legends_' + window.location.hostname.replace(/\./g, '_');
-        const LEADERBOARD_API = 'https://jsonbox.io/' + LEADERBOARD_BOX;
+        // JSONBin.io configuration
+        const JSONBIN_ID = '6979ee4143b1c97be9518da1';
+        const JSONBIN_KEY = '$2a$10$6dLZmfAFwo2i6G8vjA/ihuJpkSI7emtduOgRVoivfRvhrYW9FO.FC';
+        const LEADERBOARD_API = 'https://api.jsonbin.io/v3/b/' + JSONBIN_ID;
 
         // Generate unique player ID (using localStorage)
         function getPlayerId() {
@@ -3742,24 +4043,16 @@
             leaderboardLoading = true;
 
             try {
-                // jsonbox.io returns an array of records, sorted by _createdOn desc
-                const response = await fetch(LEADERBOARD_API + '?sort=-score&limit=100');
+                const response = await fetch(LEADERBOARD_API + '/latest', {
+                    headers: {
+                        'X-Master-Key': JSONBIN_KEY
+                    }
+                });
 
                 if (response.ok) {
                     const data = await response.json();
-                    if (Array.isArray(data)) {
-                        // jsonbox returns records with _id, extract our score data
-                        leaderboard = data.map(record => ({
-                            id: record.playerId || record.id,
-                            name: record.name,
-                            score: record.score,
-                            level: record.level,
-                            todosDeleted: record.todosDeleted,
-                            maxCombo: record.maxCombo,
-                            bossesDefeated: record.bossesDefeated,
-                            timestamp: record.timestamp,
-                            _id: record._id // Keep jsonbox ID for updates
-                        }));
+                    if (data.record && Array.isArray(data.record.leaderboard)) {
+                        leaderboard = data.record.leaderboard;
                         localStorage.setItem('raanman_leaderboard', JSON.stringify(leaderboard));
                     }
                 }
@@ -3773,7 +4066,7 @@
         // Save to shared leaderboard
         async function saveToLeaderboard() {
             const entry = {
-                playerId: getPlayerId(),
+                id: getPlayerId(),
                 name: getPlayerName(),
                 score: score + totalRunScore,
                 level: currentLevel,
@@ -3786,41 +4079,33 @@
             // Load latest from server first
             await loadLeaderboard();
 
-            // Check if player already has an entry on server
-            const existingEntry = leaderboard.find(e => e.id === entry.playerId);
-
-            // Save to localStorage cache first
-            const localIdx = leaderboard.findIndex(e => e.id === entry.playerId);
-            if (localIdx >= 0) {
-                if (entry.score > leaderboard[localIdx].score) {
-                    leaderboard[localIdx] = { ...entry, id: entry.playerId };
+            // Find if player already has an entry
+            const existingIdx = leaderboard.findIndex(e => e.id === entry.id);
+            if (existingIdx >= 0) {
+                // Update if new score is higher
+                if (entry.score > leaderboard[existingIdx].score) {
+                    leaderboard[existingIdx] = entry;
                 }
             } else {
-                leaderboard.push({ ...entry, id: entry.playerId });
+                leaderboard.push(entry);
             }
             leaderboard.sort((a, b) => b.score - a.score);
             leaderboard = leaderboard.slice(0, 100);
             localStorage.setItem('raanman_leaderboard', JSON.stringify(leaderboard));
 
-            // Save to server
+            // Save to server (JSONBin.io uses PUT to update entire bin)
             try {
-                if (existingEntry && existingEntry._id && entry.score > existingEntry.score) {
-                    // Update existing record
-                    await fetch(LEADERBOARD_API + '/' + existingEntry._id, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(entry)
-                    });
-                } else if (!existingEntry) {
-                    // Create new record
-                    await fetch(LEADERBOARD_API, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(entry)
-                    });
-                }
+                await fetch(LEADERBOARD_API, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': JSONBIN_KEY
+                    },
+                    body: JSON.stringify({ leaderboard: leaderboard })
+                });
+                console.log('Leaderboard saved to server');
             } catch (e) {
-                console.log('Saved locally (offline mode)');
+                console.log('Saved locally (offline mode)', e);
             }
         }
 
