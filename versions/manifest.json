@@ -1,6 +1,13 @@
 {
   "versions": [
     {
+      "id": "v3",
+      "name": "v3.0 - Parallax Shader Update",
+      "date": "2026-01-28",
+      "description": "Parallax background shaders, native fullscreen resolution, dollar bill jump particles, shared online leaderboard",
+      "file": "v3.html"
+    },
+    {
       "id": "v2",
       "name": "v2.0 - Roguelike Update",
       "date": "2026-01-28",
@@ -15,5 +22,5 @@
       "file": "v1.html"
     }
   ],
-  "latest": "v2"
+  "latest": "v3"
 }
