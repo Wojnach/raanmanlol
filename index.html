@@ -1,24 +1,345 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Raanman</title>
+    <title>Raanman Game</title>
     <style>
-        body {
-            background-color: blue;
-            color: white;
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+        * {
             margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #1a1a2e;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            color: white;
         }
         h1 {
-            font-size: 4rem;
+            margin-bottom: 10px;
+            color: #00d4ff;
+        }
+        #gameContainer {
+            position: relative;
+        }
+        canvas {
+            border: 3px solid #00d4ff;
+            border-radius: 8px;
+            background-color: #16213e;
+        }
+        #score {
+            font-size: 1.5rem;
+            margin-top: 10px;
+        }
+        #instructions {
+            margin-top: 15px;
+            color: #888;
+            text-align: center;
+        }
+        #gameOver {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid #ff0055;
+        }
+        #gameOver h2 {
+            color: #ff0055;
+            margin-bottom: 15px;
+        }
+        #restartBtn {
+            background: #00d4ff;
+            border: none;
+            padding: 10px 30px;
+            font-size: 1.2rem;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        #restartBtn:hover {
+            background: #00a8cc;
         }
     </style>
 </head>
 <body>
-    <h1>Raanman</h1>
+    <h1>Raanman Game</h1>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="600" height="400"></canvas>
+        <div id="gameOver">
+            <h2>Game Over!</h2>
+            <p>Final Score: <span id="finalScore">0</span></p>
+            <button id="restartBtn">Play Again</button>
+        </div>
+    </div>
+    <div id="score">Score: <span id="scoreValue">0</span></div>
+    <div id="instructions">
+        Use Arrow Keys or WASD to move<br>
+        Collect the blue orbs, avoid the red enemies!
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('scoreValue');
+        const gameOverElement = document.getElementById('gameOver');
+        const finalScoreElement = document.getElementById('finalScore');
+        const restartBtn = document.getElementById('restartBtn');
+
+        // Game state
+        let gameRunning = true;
+        let score = 0;
+
+        // Player (Raanman)
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            size: 30,
+            speed: 5,
+            color: '#00ff88'
+        };
+
+        // Controls
+        const keys = {
+            up: false,
+            down: false,
+            left: false,
+            right: false
+        };
+
+        // Collectibles
+        let orbs = [];
+        const orbCount = 5;
+
+        // Enemies
+        let enemies = [];
+        const enemyCount = 3;
+
+        function spawnOrb() {
+            return {
+                x: Math.random() * (canvas.width - 40) + 20,
+                y: Math.random() * (canvas.height - 40) + 20,
+                size: 15,
+                color: '#00d4ff'
+            };
+        }
+
+        function spawnEnemy() {
+            const side = Math.floor(Math.random() * 4);
+            let x, y;
+
+            switch(side) {
+                case 0: x = 0; y = Math.random() * canvas.height; break;
+                case 1: x = canvas.width; y = Math.random() * canvas.height; break;
+                case 2: x = Math.random() * canvas.width; y = 0; break;
+                case 3: x = Math.random() * canvas.width; y = canvas.height; break;
+            }
+
+            return {
+                x: x,
+                y: y,
+                size: 20,
+                speed: 1.5 + Math.random() * 1.5,
+                color: '#ff0055'
+            };
+        }
+
+        function initGame() {
+            orbs = [];
+            enemies = [];
+            score = 0;
+            player.x = canvas.width / 2;
+            player.y = canvas.height / 2;
+            gameRunning = true;
+            gameOverElement.style.display = 'none';
+
+            for (let i = 0; i < orbCount; i++) {
+                orbs.push(spawnOrb());
+            }
+            for (let i = 0; i < enemyCount; i++) {
+                enemies.push(spawnEnemy());
+            }
+        }
+
+        function drawPlayer() {
+            // Body
+            ctx.fillStyle = player.color;
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.size / 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Face
+            ctx.fillStyle = '#000';
+            // Eyes
+            ctx.beginPath();
+            ctx.arc(player.x - 6, player.y - 4, 4, 0, Math.PI * 2);
+            ctx.arc(player.x + 6, player.y - 4, 4, 0, Math.PI * 2);
+            ctx.fill();
+            // Smile
+            ctx.beginPath();
+            ctx.arc(player.x, player.y + 2, 8, 0, Math.PI);
+            ctx.stroke();
+
+            // "R" letter
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 10px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('R', player.x, player.y + 14);
+        }
+
+        function drawOrbs() {
+            orbs.forEach(orb => {
+                ctx.fillStyle = orb.color;
+                ctx.beginPath();
+                ctx.arc(orb.x, orb.y, orb.size / 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Glow effect
+                ctx.shadowColor = orb.color;
+                ctx.shadowBlur = 15;
+                ctx.beginPath();
+                ctx.arc(orb.x, orb.y, orb.size / 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            });
+        }
+
+        function drawEnemies() {
+            enemies.forEach(enemy => {
+                ctx.fillStyle = enemy.color;
+                ctx.beginPath();
+                ctx.arc(enemy.x, enemy.y, enemy.size / 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Angry eyes
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(enemy.x - 5, enemy.y - 3, 4, 0, Math.PI * 2);
+                ctx.arc(enemy.x + 5, enemy.y - 3, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(enemy.x - 5, enemy.y - 3, 2, 0, Math.PI * 2);
+                ctx.arc(enemy.x + 5, enemy.y - 3, 2, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function updatePlayer() {
+            if (keys.up && player.y > player.size / 2) player.y -= player.speed;
+            if (keys.down && player.y < canvas.height - player.size / 2) player.y += player.speed;
+            if (keys.left && player.x > player.size / 2) player.x -= player.speed;
+            if (keys.right && player.x < canvas.width - player.size / 2) player.x += player.speed;
+        }
+
+        function updateEnemies() {
+            enemies.forEach(enemy => {
+                const dx = player.x - enemy.x;
+                const dy = player.y - enemy.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist > 0) {
+                    enemy.x += (dx / dist) * enemy.speed;
+                    enemy.y += (dy / dist) * enemy.speed;
+                }
+            });
+        }
+
+        function checkCollisions() {
+            // Check orb collection
+            orbs = orbs.filter(orb => {
+                const dx = player.x - orb.x;
+                const dy = player.y - orb.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < (player.size / 2 + orb.size / 2)) {
+                    score += 10;
+                    scoreElement.textContent = score;
+
+                    // Spawn new orb
+                    setTimeout(() => {
+                        if (gameRunning) orbs.push(spawnOrb());
+                    }, 500);
+
+                    // Add enemy every 50 points
+                    if (score % 50 === 0) {
+                        enemies.push(spawnEnemy());
+                    }
+
+                    return false;
+                }
+                return true;
+            });
+
+            // Check enemy collision
+            enemies.forEach(enemy => {
+                const dx = player.x - enemy.x;
+                const dy = player.y - enemy.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < (player.size / 2 + enemy.size / 2)) {
+                    gameOver();
+                }
+            });
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            finalScoreElement.textContent = score;
+            gameOverElement.style.display = 'block';
+        }
+
+        function gameLoop() {
+            if (!gameRunning) return;
+
+            // Clear canvas
+            ctx.fillStyle = '#16213e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Update
+            updatePlayer();
+            updateEnemies();
+            checkCollisions();
+
+            // Draw
+            drawOrbs();
+            drawEnemies();
+            drawPlayer();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Event listeners
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keys.up = true;
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keys.down = true;
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keys.up = false;
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keys.down = false;
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
+        });
+
+        restartBtn.addEventListener('click', () => {
+            initGame();
+            gameLoop();
+        });
+
+        // Start game
+        initGame();
+        gameLoop();
+    </script>
 </body>
 </html>
