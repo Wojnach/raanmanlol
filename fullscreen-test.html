@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fullscreen Centering Test</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #111;
+            color: #0f0;
+            font-family: monospace;
+            min-height: 100vh;
+        }
+        #controls {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: rgba(0,0,0,0.9);
+            padding: 15px;
+            border: 1px solid #0f0;
+        }
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: monospace;
+        }
+        #info {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: rgba(0,0,0,0.9);
+            padding: 10px;
+            border: 1px solid #0f0;
+            font-size: 12px;
+        }
+        #testContainer {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        #testCanvas {
+            border: 3px solid #f00;
+            background: #222;
+        }
+        /* Crosshair to show true center */
+        #centerMark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            transform: translate(-50%, -50%);
+            z-index: 999;
+            pointer-events: none;
+        }
+        #centerMark::before, #centerMark::after {
+            content: '';
+            position: absolute;
+            background: #ff0;
+        }
+        #centerMark::before {
+            width: 100%;
+            height: 2px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        #centerMark::after {
+            width: 2px;
+            height: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <h3>Fullscreen Centering Test</h3>
+        <p>Yellow crosshair = screen center</p>
+        <p>Red border = canvas edge</p>
+        <p>Green cross = canvas center</p>
+        <hr style="margin: 10px 0; border-color: #0f0;">
+        <button onclick="toggleFullscreen()">Toggle Fullscreen [F]</button>
+        <br>
+        <button onclick="simulateSize(1920, 1080)">1920x1080 (16:9)</button>
+        <button onclick="simulateSize(2560, 1440)">2560x1440 (16:9)</button>
+        <br>
+        <button onclick="simulateSize(1920, 1200)">1920x1200 (16:10)</button>
+        <button onclick="simulateSize(1680, 1050)">1680x1050 (16:10)</button>
+        <br>
+        <button onclick="simulateSize(1024, 768)">1024x768 (4:3)</button>
+        <button onclick="simulateSize(1280, 1024)">1280x1024 (5:4)</button>
+        <br>
+        <button onclick="simulateSize(2560, 1080)">2560x1080 (21:9 Ultra)</button>
+        <button onclick="simulateSize(3440, 1440)">3440x1440 (21:9 Ultra)</button>
+    </style>
+    </div>
+
+    <div id="centerMark"></div>
+
+    <div id="testContainer">
+        <canvas id="testCanvas"></canvas>
+    </div>
+
+    <div id="info">Loading...</div>
+
+    <script>
+        const BASE_WIDTH = 800;
+        const BASE_HEIGHT = 500;
+        const canvas = document.getElementById('testCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('testContainer');
+        const info = document.getElementById('info');
+
+        let isFullscreen = false;
+        let simulatedWidth = null;
+        let simulatedHeight = null;
+
+        function getScreenSize() {
+            if (simulatedWidth && simulatedHeight) {
+                return { width: simulatedWidth, height: simulatedHeight };
+            }
+            return { width: window.innerWidth, height: window.innerHeight };
+        }
+
+        function resizeCanvas() {
+            const screen = getScreenSize();
+            const windowWidth = screen.width;
+            const windowHeight = screen.height;
+
+            if (isFullscreen || document.fullscreenElement) {
+                const gameAspect = BASE_WIDTH / BASE_HEIGHT; // 1.6 (16:10)
+                const screenAspect = windowWidth / windowHeight;
+
+                let displayWidth, displayHeight;
+
+                if (screenAspect > gameAspect) {
+                    // Screen is wider than game - fit to height
+                    displayHeight = windowHeight;
+                    displayWidth = windowHeight * gameAspect;
+                } else {
+                    // Screen is taller than game - fit to width
+                    displayWidth = windowWidth;
+                    displayHeight = windowWidth / gameAspect;
+                }
+
+                // Set canvas internal resolution
+                canvas.width = BASE_WIDTH;
+                canvas.height = BASE_HEIGHT;
+
+                // Set display size
+                canvas.style.width = Math.floor(displayWidth) + 'px';
+                canvas.style.height = Math.floor(displayHeight) + 'px';
+
+                // Update container to match simulated size
+                if (simulatedWidth) {
+                    container.style.width = windowWidth + 'px';
+                    container.style.height = windowHeight + 'px';
+                }
+
+                updateInfo(windowWidth, windowHeight, displayWidth, displayHeight, screenAspect, gameAspect);
+            } else {
+                canvas.width = BASE_WIDTH;
+                canvas.height = BASE_HEIGHT;
+                canvas.style.width = '400px';
+                canvas.style.height = '250px';
+                container.style.width = '100vw';
+                container.style.height = '100vh';
+                info.textContent = 'Not fullscreen - click Toggle Fullscreen or press F';
+            }
+
+            drawTestPattern();
+        }
+
+        function updateInfo(screenW, screenH, canvasW, canvasH, screenAspect, gameAspect) {
+            const canvasRect = canvas.getBoundingClientRect();
+            const screenCenterX = screenW / 2;
+            const screenCenterY = screenH / 2;
+            const canvasCenterX = canvasRect.left + canvasRect.width / 2;
+            const canvasCenterY = canvasRect.top + canvasRect.height / 2;
+            const offsetX = canvasCenterX - screenCenterX;
+            const offsetY = canvasCenterY - screenCenterY;
+
+            info.innerHTML = `
+                Screen: ${screenW}x${screenH} (${screenAspect.toFixed(3)})<br>
+                Canvas display: ${Math.floor(canvasW)}x${Math.floor(canvasH)}<br>
+                Game aspect: ${gameAspect.toFixed(3)} (16:10)<br>
+                <br>
+                Canvas position: (${canvasRect.left.toFixed(1)}, ${canvasRect.top.toFixed(1)})<br>
+                Canvas center: (${canvasCenterX.toFixed(1)}, ${canvasCenterY.toFixed(1)})<br>
+                Screen center: (${screenCenterX.toFixed(1)}, ${screenCenterY.toFixed(1)})<br>
+                <br>
+                <span style="color: ${Math.abs(offsetX) < 2 && Math.abs(offsetY) < 2 ? '#0f0' : '#f00'}">
+                Offset from center: (${offsetX.toFixed(1)}, ${offsetY.toFixed(1)})
+                ${Math.abs(offsetX) < 2 && Math.abs(offsetY) < 2 ? '✓ CENTERED' : '✗ NOT CENTERED'}
+                </span>
+            `;
+        }
+
+        function drawTestPattern() {
+            // Clear
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Grid
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= canvas.width; x += 50) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= canvas.height; y += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // Center crosshair (green)
+            ctx.strokeStyle = '#0f0';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.moveTo(0, canvas.height / 2);
+            ctx.lineTo(canvas.width, canvas.height / 2);
+            ctx.stroke();
+
+            // Center circle
+            ctx.beginPath();
+            ctx.arc(canvas.width / 2, canvas.height / 2, 30, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Corner markers
+            ctx.fillStyle = '#ff0';
+            ctx.font = '14px monospace';
+            ctx.fillText('TL', 10, 20);
+            ctx.fillText('TR', canvas.width - 25, 20);
+            ctx.fillText('BL', 10, canvas.height - 10);
+            ctx.fillText('BR', canvas.width - 25, canvas.height - 10);
+
+            // Title
+            ctx.fillStyle = '#0f0';
+            ctx.font = '20px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('FULLSCREEN CENTER TEST', canvas.width / 2, 40);
+            ctx.fillText(`${BASE_WIDTH}x${BASE_HEIGHT}`, canvas.width / 2, canvas.height - 20);
+            ctx.textAlign = 'left';
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function simulateSize(w, h) {
+            simulatedWidth = w;
+            simulatedHeight = h;
+            isFullscreen = true;
+            document.body.style.overflow = 'hidden';
+            resizeCanvas();
+        }
+
+        // Event listeners
+        document.addEventListener('fullscreenchange', () => {
+            isFullscreen = !!document.fullscreenElement;
+            simulatedWidth = null;
+            simulatedHeight = null;
+            if (isFullscreen) {
+                document.body.classList.add('fullscreen');
+            } else {
+                document.body.classList.remove('fullscreen');
+            }
+            setTimeout(resizeCanvas, 100);
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'f' || e.key === 'F') {
+                toggleFullscreen();
+            }
+            if (e.key === 'Escape' && simulatedWidth) {
+                simulatedWidth = null;
+                simulatedHeight = null;
+                isFullscreen = false;
+                document.body.style.overflow = '';
+                resizeCanvas();
+            }
+        });
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // Initial draw
+        resizeCanvas();
+    </script>
+</body>
+</html>

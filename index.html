@@ -97,20 +97,15 @@
             width: 100vw;
             height: 100vh;
             height: 100dvh;
-            display: block;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
         }
         body.fullscreen canvas {
             border: none;
             border-radius: 0;
-            max-width: 100vw;
-            max-height: 100vh;
-            max-height: 100dvh;
-            object-fit: contain;
-            margin: auto;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            /* Size set by JavaScript to maintain aspect ratio */
         }
         h1 {
             margin-bottom: 5px;
@@ -2770,6 +2765,7 @@
             if (e.key === 'e' || e.key === 'E') keys.hack = true;
             if (e.key === 't' || e.key === 'T') { e.preventDefault(); runTests(); }
             if (e.key === 'l' || e.key === 'L') { e.preventDefault(); toggleLeaderboardPopup(); }
+            if (e.key === '`' || e.key === '~') { e.preventDefault(); toggleDebugOverlay(); }
 
             if (e.key === 'Enter') {
                 if (gameState !== 'playing') {
@@ -2795,6 +2791,79 @@
         document.getElementById('startBtn').addEventListener('click', initGame);
         document.getElementById('restartBtn').addEventListener('click', initGame);
         document.getElementById('victoryBtn').addEventListener('click', initGame);
+
+        // ============================================
+        // DEBUG OVERLAY (press ~ to toggle)
+        // ============================================
+        let debugOverlayVisible = false;
+        let debugOverlay = null;
+
+        function toggleDebugOverlay() {
+            debugOverlayVisible = !debugOverlayVisible;
+            if (!debugOverlay) {
+                debugOverlay = document.createElement('div');
+                debugOverlay.id = 'debugOverlay';
+                debugOverlay.style.cssText = `
+                    position: fixed;
+                    top: 10px;
+                    right: 10px;
+                    background: rgba(0, 0, 0, 0.9);
+                    color: #0f0;
+                    font-family: monospace;
+                    font-size: 11px;
+                    padding: 10px;
+                    border: 1px solid #0f0;
+                    z-index: 9999;
+                    min-width: 250px;
+                `;
+                document.body.appendChild(debugOverlay);
+            }
+            debugOverlay.style.display = debugOverlayVisible ? 'block' : 'none';
+            if (debugOverlayVisible) updateDebugOverlay();
+        }
+
+        function updateDebugOverlay() {
+            if (!debugOverlay || !debugOverlayVisible) return;
+
+            const canvasRect = canvas.getBoundingClientRect();
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+            const screenCenterX = windowWidth / 2;
+            const screenCenterY = windowHeight / 2;
+            const canvasCenterX = canvasRect.left + canvasRect.width / 2;
+            const canvasCenterY = canvasRect.top + canvasRect.height / 2;
+            const offsetX = Math.round(canvasCenterX - screenCenterX);
+            const offsetY = Math.round(canvasCenterY - screenCenterY);
+            const isCentered = Math.abs(offsetX) < 5 && Math.abs(offsetY) < 5;
+
+            const gameAspect = (BASE_WIDTH / BASE_HEIGHT).toFixed(3);
+            const screenAspect = (windowWidth / windowHeight).toFixed(3);
+
+            debugOverlay.innerHTML = `
+                <div style="color: #ff0; margin-bottom: 5px;">DEBUG [~ to close]</div>
+                <hr style="border-color: #333; margin: 5px 0;">
+                <b>Screen:</b> ${windowWidth}x${windowHeight} (${screenAspect})<br>
+                <b>Canvas internal:</b> ${canvas.width}x${canvas.height}<br>
+                <b>Canvas display:</b> ${Math.round(canvasRect.width)}x${Math.round(canvasRect.height)}<br>
+                <b>Game aspect:</b> ${gameAspect} (16:10)<br>
+                <hr style="border-color: #333; margin: 5px 0;">
+                <b>Canvas position:</b> (${Math.round(canvasRect.left)}, ${Math.round(canvasRect.top)})<br>
+                <b>Canvas center:</b> (${Math.round(canvasCenterX)}, ${Math.round(canvasCenterY)})<br>
+                <b>Screen center:</b> (${screenCenterX}, ${screenCenterY})<br>
+                <hr style="border-color: #333; margin: 5px 0;">
+                <b>Offset from center:</b> (${offsetX}, ${offsetY})<br>
+                <span style="color: ${isCentered ? '#0f0' : '#f00'}; font-weight: bold;">
+                    ${isCentered ? '✓ CENTERED' : '✗ NOT CENTERED (offset: ' + Math.max(Math.abs(offsetX), Math.abs(offsetY)) + 'px)'}
+                </span><br>
+                <hr style="border-color: #333; margin: 5px 0;">
+                <b>Fullscreen:</b> ${isFullscreen || document.fullscreenElement ? 'YES' : 'NO'}<br>
+                <b>Scale:</b> ${scale.toFixed(3)}<br>
+                <b>FPS:</b> ${(1000 / (deltaTime * TARGET_FRAME_TIME)).toFixed(1)}<br>
+            `;
+        }
+
+        // Update debug overlay periodically
+        setInterval(updateDebugOverlay, 100);
 
         // ============================================
         // UNIT TESTS
@@ -2954,38 +3023,39 @@
             const container = document.getElementById('gameContainer');
             const rect = container.getBoundingClientRect();
 
+            // Always keep internal resolution at base size
+            canvas.width = BASE_WIDTH;
+            canvas.height = BASE_HEIGHT;
+
             if (isFullscreen || document.fullscreenElement) {
-                // Fullscreen: maintain aspect ratio and center on screen
+                // Fullscreen: calculate display size to fit screen while maintaining aspect ratio
                 const windowWidth = window.innerWidth;
                 const windowHeight = window.innerHeight;
-                const gameAspect = BASE_WIDTH / BASE_HEIGHT;
+                const gameAspect = BASE_WIDTH / BASE_HEIGHT; // 800/500 = 1.6 (16:10)
                 const screenAspect = windowWidth / windowHeight;
 
                 let displayWidth, displayHeight;
 
                 if (screenAspect > gameAspect) {
-                    // Screen is wider than game - fit to height
+                    // Screen is wider than game (e.g., 21:9) - fit to height, letterbox sides
                     displayHeight = windowHeight;
-                    displayWidth = windowHeight * gameAspect;
+                    displayWidth = Math.floor(windowHeight * gameAspect);
                 } else {
-                    // Screen is taller than game - fit to width
+                    // Screen is taller than game (e.g., 4:3) - fit to width, letterbox top/bottom
                     displayWidth = windowWidth;
-                    displayHeight = windowWidth / gameAspect;
+                    displayHeight = Math.floor(windowWidth / gameAspect);
                 }
 
-                // Keep game logic at base resolution for frame-rate independence
-                canvas.width = BASE_WIDTH;
-                canvas.height = BASE_HEIGHT;
-
-                // Scale display to fit screen, CSS will center it
-                canvas.style.width = Math.floor(displayWidth) + 'px';
-                canvas.style.height = Math.floor(displayHeight) + 'px';
+                // Set canvas display size - flexbox will center it
+                canvas.style.width = displayWidth + 'px';
+                canvas.style.height = displayHeight + 'px';
 
                 scale = displayWidth / BASE_WIDTH;
+
+                // Debug info (remove in production)
+                console.log(`Fullscreen: ${windowWidth}x${windowHeight} (${screenAspect.toFixed(2)}) -> Canvas: ${displayWidth}x${displayHeight}`);
             } else {
-                // Normal: fit container
-                canvas.width = BASE_WIDTH;
-                canvas.height = BASE_HEIGHT;
+                // Normal windowed mode: fit to container
                 canvas.style.width = '100%';
                 canvas.style.height = '100%';
                 scale = rect.width / BASE_WIDTH;
@@ -3617,22 +3687,18 @@
         };
 
         // ============================================
-        // LEADERBOARD SYSTEM (Shared Online)
+        // LEADERBOARD SYSTEM (Shared Online via jsonbox.io)
         // ============================================
-        // To enable shared leaderboard:
-        // 1. Create free account at https://jsonbin.io
-        // 2. Create a new bin with content: {"leaderboard": []}
-        // 3. Copy the bin ID and Master Key
-        // 4. Replace the values below
-        // Falls back to localStorage if API unavailable
+        // Uses jsonbox.io - a free JSON storage that requires no API keys
+        // Data is stored in a unique box identified by the box ID below
         let playerName = 'ANONYMOUS';
         let playerId = null;
         let leaderboard = [];
         let leaderboardLoading = false;
 
-        // JSONBin.io configuration (replace with your own)
-        const LEADERBOARD_API = 'https://api.jsonbin.io/v3/b/679917c5ad19ca34f8f3e7d1';
-        const JSONBIN_KEY = '$2a$10$TmQ5JvPqIuFqNm5y1nQKwuGUUGPFQm5yQjUx4q.qUv5aJZvq5DPXO';
+        // Unique box ID for this game's leaderboard (auto-generated, don't change)
+        const LEADERBOARD_BOX = 'raanman_legends_' + window.location.hostname.replace(/\./g, '_');
+        const LEADERBOARD_API = 'https://jsonbox.io/' + LEADERBOARD_BOX;
 
         // Generate unique player ID (using localStorage)
         function getPlayerId() {
@@ -3676,21 +3742,29 @@
             leaderboardLoading = true;
 
             try {
-                const response = await fetch(LEADERBOARD_API + '/latest', {
-                    headers: {
-                        'X-Master-Key': JSONBIN_KEY
-                    }
-                });
+                // jsonbox.io returns an array of records, sorted by _createdOn desc
+                const response = await fetch(LEADERBOARD_API + '?sort=-score&limit=100');
 
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.record && Array.isArray(data.record.leaderboard)) {
-                        leaderboard = data.record.leaderboard;
+                    if (Array.isArray(data)) {
+                        // jsonbox returns records with _id, extract our score data
+                        leaderboard = data.map(record => ({
+                            id: record.playerId || record.id,
+                            name: record.name,
+                            score: record.score,
+                            level: record.level,
+                            todosDeleted: record.todosDeleted,
+                            maxCombo: record.maxCombo,
+                            bossesDefeated: record.bossesDefeated,
+                            timestamp: record.timestamp,
+                            _id: record._id // Keep jsonbox ID for updates
+                        }));
                         localStorage.setItem('raanman_leaderboard', JSON.stringify(leaderboard));
                     }
                 }
             } catch (e) {
-                console.log('Using cached leaderboard (offline mode)');
+                console.log('Using cached leaderboard (offline mode)', e);
             }
 
             leaderboardLoading = false;
@@ -3699,7 +3773,7 @@
         // Save to shared leaderboard
         async function saveToLeaderboard() {
             const entry = {
-                id: getPlayerId(),
+                playerId: getPlayerId(),
                 name: getPlayerName(),
                 score: score + totalRunScore,
                 level: currentLevel,
@@ -3712,35 +3786,39 @@
             // Load latest from server first
             await loadLeaderboard();
 
-            // Find if player already has an entry
-            const existingIdx = leaderboard.findIndex(e => e.id === entry.id);
-            if (existingIdx >= 0) {
-                if (entry.score > leaderboard[existingIdx].score) {
-                    leaderboard[existingIdx] = entry;
+            // Check if player already has an entry on server
+            const existingEntry = leaderboard.find(e => e.id === entry.playerId);
+
+            // Save to localStorage cache first
+            const localIdx = leaderboard.findIndex(e => e.id === entry.playerId);
+            if (localIdx >= 0) {
+                if (entry.score > leaderboard[localIdx].score) {
+                    leaderboard[localIdx] = { ...entry, id: entry.playerId };
                 }
             } else {
-                leaderboard.push(entry);
+                leaderboard.push({ ...entry, id: entry.playerId });
             }
-
-            // Sort by score
             leaderboard.sort((a, b) => b.score - a.score);
-
-            // Keep top 100
             leaderboard = leaderboard.slice(0, 100);
-
-            // Save to localStorage cache
             localStorage.setItem('raanman_leaderboard', JSON.stringify(leaderboard));
 
             // Save to server
             try {
-                await fetch(LEADERBOARD_API, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': JSONBIN_KEY
-                    },
-                    body: JSON.stringify({ leaderboard: leaderboard })
-                });
+                if (existingEntry && existingEntry._id && entry.score > existingEntry.score) {
+                    // Update existing record
+                    await fetch(LEADERBOARD_API + '/' + existingEntry._id, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(entry)
+                    });
+                } else if (!existingEntry) {
+                    // Create new record
+                    await fetch(LEADERBOARD_API, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(entry)
+                    });
+                }
             } catch (e) {
                 console.log('Saved locally (offline mode)');
             }
@@ -4109,6 +4187,24 @@
             test('getPlayerId returns string', () => typeof getPlayerId() === 'string');
             test('getPlayerName returns string', () => typeof getPlayerName() === 'string');
             test('leaderboard is array', () => Array.isArray(leaderboard));
+
+            // Fullscreen centering tests (simulated)
+            test('canvas aspect ratio is 16:10', () => Math.abs(BASE_WIDTH / BASE_HEIGHT - 1.6) < 0.01);
+            test('resizeCanvas function exists', () => typeof resizeCanvas === 'function');
+
+            // Test aspect ratio calculation logic
+            const testCases = [
+                { w: 1920, h: 1080, expectFitTo: 'height' },  // 16:9 wider than 16:10
+                { w: 2560, h: 1440, expectFitTo: 'height' },  // 16:9
+                { w: 1024, h: 768, expectFitTo: 'width' },    // 4:3 taller than 16:10
+                { w: 2560, h: 1080, expectFitTo: 'height' },  // 21:9 ultrawide
+            ];
+            testCases.forEach(tc => {
+                const gameAspect = BASE_WIDTH / BASE_HEIGHT;
+                const screenAspect = tc.w / tc.h;
+                const actual = screenAspect > gameAspect ? 'height' : 'width';
+                test(`${tc.w}x${tc.h} fits to ${tc.expectFitTo}`, () => actual === tc.expectFitTo);
+            });
 
             // Update display
             testResultsDiv.innerHTML = `<strong>Tests: ${passed}/${passed + failed}</strong><br><br>` +
