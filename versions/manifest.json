@@ -1,6 +1,13 @@
 {
   "versions": [
     {
+      "id": "v4",
+      "name": "v4.0 - Bug Fixes & Leaderboard Update",
+      "date": "2026-01-28",
+      "description": "Name-based leaderboard (multiple players per device), performance fixes, combo decay fix, particle limits",
+      "file": "v4.html"
+    },
+    {
       "id": "v3",
       "name": "v3.0 - Parallax Shader Update",
       "date": "2026-01-28",
@@ -22,5 +29,5 @@
       "file": "v1.html"
     }
   ],
-  "latest": "v3"
+  "latest": "v4"
 }
