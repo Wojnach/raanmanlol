@@ -323,6 +323,10 @@
             if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keys.down = true;
             if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
             if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+            if (e.key === 'Enter' && !gameRunning) {
+                initGame();
+                gameLoop();
+            }
         });
 
         document.addEventListener('keyup', (e) => {
