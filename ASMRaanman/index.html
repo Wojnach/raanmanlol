@@ -1091,6 +1091,315 @@ function drawHUD(time) {
 }
 
 // ============================================
+// SIDE CHARACTERS: SPERRING & SYDNEY
+// They pop in, chase Raanman, then disappear!
+// ============================================
+const sideChars = [];
+
+const SPERRING_LINES = [
+    "RAANMAN! Code review!",
+    "Your PR has conflicts!",
+    "The build is broken!",
+    "Stand-up in 2 minutes!",
+    "Did you push to main?!",
+    "WHERE ARE THE TESTS?!",
+];
+const SYDNEY_LINES = [
+    "Raanman! Deploy time!",
+    "The client wants changes!",
+    "Sprint retrospective NOW!",
+    "Your branch is 47\ncommits behind!",
+    "Raanman, JIRA is on fire!",
+    "The deadline moved UP!",
+];
+
+function drawSperring(x, y, facing, frame) {
+    ctx.save();
+    const bx = x, by = y + 50;
+    ctx.translate(x + 15, y + 50);
+    ctx.scale(facing, 1);
+    ctx.translate(-(x + 15), -(y + 50));
+
+    // Hoodie body
+    ctx.fillStyle = '#2244aa';
+    ctx.fillRect(bx + 4, by - 28, 22, 23);
+
+    // Hood
+    ctx.fillStyle = '#1a3388';
+    ctx.beginPath();
+    ctx.arc(bx + 15, by - 32, 14, Math.PI, 0);
+    ctx.fill();
+    ctx.fillRect(bx + 1, by - 32, 28, 6);
+
+    // Face peeking out
+    ctx.fillStyle = '#e8c89e';
+    ctx.beginPath();
+    ctx.arc(bx + 15, by - 34, 9, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Beady eyes
+    ctx.fillStyle = '#111';
+    ctx.fillRect(bx + 10, by - 36, 3, 3);
+    ctx.fillRect(bx + 17, by - 36, 3, 3);
+
+    // Determined mouth
+    ctx.strokeStyle = '#994433';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(bx + 11, by - 30);
+    ctx.lineTo(bx + 19, by - 30);
+    ctx.stroke();
+
+    // Arms reaching forward (chasing!)
+    ctx.fillStyle = '#2244aa';
+    const armReach = Math.sin(frame * 0.4) * 6;
+    ctx.fillRect(bx + 26, by - 24 + armReach, 10, 5);
+    ctx.fillRect(bx + 26, by - 18 - armReach, 10, 5);
+
+    // Legs
+    ctx.fillStyle = '#333';
+    const legAnim = Math.sin(frame * 0.5) * 5;
+    ctx.fillRect(bx + 7, by - 5 - legAnim, 6, 10 + legAnim);
+    ctx.fillRect(bx + 17, by - 5 + legAnim, 6, 10 - legAnim);
+
+    // Shoes
+    ctx.fillStyle = '#cc3333';
+    ctx.fillRect(bx + 5, by + 4 - legAnim, 9, 3);
+    ctx.fillRect(bx + 16, by + 4 + legAnim, 9, 3);
+
+    ctx.restore();
+}
+
+function drawSydney(x, y, facing, frame) {
+    ctx.save();
+    const bx = x, by = y + 50;
+    ctx.translate(x + 15, y + 50);
+    ctx.scale(facing, 1);
+    ctx.translate(-(x + 15), -(y + 50));
+
+    // Purple jacket body
+    ctx.fillStyle = '#7733aa';
+    ctx.fillRect(bx + 4, by - 28, 22, 23);
+
+    // Collar
+    ctx.fillStyle = '#8844bb';
+    ctx.fillRect(bx + 2, by - 30, 26, 5);
+
+    // Head
+    ctx.fillStyle = '#f0d0a0';
+    ctx.beginPath();
+    ctx.arc(bx + 15, by - 38, 11, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Hair (ponytail)
+    ctx.fillStyle = '#442200';
+    ctx.beginPath();
+    ctx.arc(bx + 15, by - 40, 11, Math.PI + 0.3, -0.3);
+    ctx.fill();
+    // Ponytail
+    ctx.fillRect(bx - 2, by - 42, 6, 16);
+    ctx.beginPath();
+    ctx.arc(bx + 1, by - 26, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Big round glasses
+    ctx.strokeStyle = '#ccc';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(bx + 11, by - 38, 5, 0, Math.PI * 2);
+    ctx.arc(bx + 21, by - 38, 5, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(bx + 16, by - 38);
+    ctx.lineTo(bx + 16, by - 38);
+    ctx.stroke();
+
+    // Eyes behind glasses
+    ctx.fillStyle = '#111';
+    ctx.fillRect(bx + 10, by - 39, 2, 2);
+    ctx.fillRect(bx + 20, by - 39, 2, 2);
+
+    // Determined grin
+    ctx.strokeStyle = '#aa5544';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(bx + 15, by - 32, 4, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+
+    // Arms reaching
+    ctx.fillStyle = '#7733aa';
+    const armReach = Math.sin(frame * 0.4 + 1) * 6;
+    ctx.fillRect(bx + 26, by - 22 + armReach, 10, 5);
+    ctx.fillRect(bx + 26, by - 16 - armReach, 10, 5);
+
+    // Legs
+    ctx.fillStyle = '#222244';
+    const legAnim = Math.sin(frame * 0.5) * 5;
+    ctx.fillRect(bx + 7, by - 5 - legAnim, 6, 10 + legAnim);
+    ctx.fillRect(bx + 17, by - 5 + legAnim, 6, 10 - legAnim);
+
+    // Boots
+    ctx.fillStyle = '#553388';
+    ctx.fillRect(bx + 5, by + 4 - legAnim, 9, 3);
+    ctx.fillRect(bx + 16, by + 4 + legAnim, 9, 3);
+
+    ctx.restore();
+}
+
+function spawnSideCharacter() {
+    if (sideChars.length > 0) return; // Only one at a time
+    if (R.state === 'caught' || R.state === 'sleep') return;
+
+    const isSperring = Math.random() > 0.5;
+    const fromLeft = Math.random() > 0.5;
+    const ground = platforms.find(p => p.type === 'ground');
+    const groundY = ground ? ground.y - 55 : canvas.height - 95;
+
+    const sc = {
+        type: isSperring ? 'sperring' : 'sydney',
+        x: fromLeft ? -40 : canvas.width + 40,
+        y: groundY,
+        vx: 0,
+        facing: fromLeft ? 1 : -1,
+        frame: 0,
+        lifetime: 400 + Math.random() * 200,
+        speed: 5 + Math.random() * 2,
+        speechTimer: 0,
+        speechText: null,
+        hasSpokeEntry: false,
+        hasSpokeChase: false,
+        fading: false,
+        alpha: 0,
+    };
+
+    sideChars.push(sc);
+}
+
+function updateSideCharacters() {
+    for (let i = sideChars.length - 1; i >= 0; i--) {
+        const sc = sideChars[i];
+        sc.frame++;
+        sc.lifetime--;
+
+        // Fade in
+        if (sc.alpha < 1 && !sc.fading) sc.alpha = Math.min(1, sc.alpha + 0.05);
+
+        // Entry speech
+        if (!sc.hasSpokeEntry && sc.alpha > 0.5) {
+            sc.hasSpokeEntry = true;
+            const lines = sc.type === 'sperring' ? SPERRING_LINES : SYDNEY_LINES;
+            sc.speechText = lines[Math.floor(Math.random() * lines.length)];
+            sc.speechTimer = 150;
+        }
+
+        // Chase Raanman!
+        const dx = (R.x + CHAR_W/2) - (sc.x + 15);
+        sc.facing = dx > 0 ? 1 : -1;
+        sc.vx = Math.sign(dx) * sc.speed;
+        sc.x += sc.vx;
+
+        // Make Raanman react
+        const dist = Math.abs(dx);
+        if (dist < 200 && R.state !== 'caught') {
+            R.state = 'flee';
+            R.panicLevel = Math.min(1, R.panicLevel + 0.03);
+            const fleeDx = R.x - sc.x;
+            R.vx += Math.sign(fleeDx) * 0.8;
+
+            if (!sc.hasSpokeChase && dist < 120) {
+                sc.hasSpokeChase = true;
+                const scares = [
+                    "NOT " + (sc.type === 'sperring' ? 'SPERRING!' : 'SYDNEY!'),
+                    "OH NO OH NO OH NO",
+                    "THEY FOUND ME!",
+                    "I'M ON BREAK!",
+                    "MY PERSONAL SPACE!!",
+                ];
+                showSpeech(scares[Math.floor(Math.random() * scares.length)], 100);
+                // Jump away!
+                if (R.grounded) {
+                    R.vy = -12;
+                    R.grounded = false;
+                    R.squash = 1.3; R.stretch = 0.7;
+                    for (let j = 0; j < 5; j++) spawnParticle(R.x + CHAR_W/2, R.y + CHAR_H, 'dollar');
+                }
+            }
+        }
+
+        // Speech timer
+        if (sc.speechTimer > 0) sc.speechTimer--;
+        if (sc.speechTimer <= 0) sc.speechText = null;
+
+        // Start fading out
+        if (sc.lifetime < 60) {
+            sc.fading = true;
+            sc.alpha = Math.max(0, sc.alpha - 0.02);
+        }
+
+        // Remove
+        if (sc.lifetime <= 0 || sc.alpha <= 0) {
+            sideChars.splice(i, 1);
+        }
+    }
+}
+
+function drawSideCharacters(time) {
+    sideChars.forEach(sc => {
+        ctx.save();
+        ctx.globalAlpha = sc.alpha;
+
+        if (sc.type === 'sperring') {
+            drawSperring(sc.x, sc.y, sc.facing, sc.frame);
+        } else {
+            drawSydney(sc.x, sc.y, sc.facing, sc.frame);
+        }
+
+        // Name tag
+        ctx.font = '10px "Courier New",monospace';
+        ctx.fillStyle = sc.type === 'sperring' ? '#4466cc' : '#aa55dd';
+        ctx.textAlign = 'center';
+        ctx.fillText(sc.type === 'sperring' ? 'Sperring' : 'Sydney', sc.x + 15, sc.y - 5);
+
+        // Speech
+        if (sc.speechText && sc.speechTimer > 0) {
+            const lines = sc.speechText.split('\n');
+            const lineH = 16;
+            const pad = 10;
+            const maxW = Math.max(...lines.map(l => l.length)) * 8;
+            const bw = Math.max(maxW + pad * 2, 100);
+            const bh = lines.length * lineH + pad * 2;
+            let bx = sc.x + 15 - bw / 2;
+            let by = sc.y - bh - 15;
+            bx = Math.max(5, Math.min(canvas.width - bw - 5, bx));
+            if (by < 5) by = sc.y + 60;
+
+            const fadeA = Math.min(1, sc.speechTimer / 30);
+            ctx.globalAlpha = sc.alpha * fadeA;
+
+            ctx.fillStyle = 'rgba(10,10,30,0.9)';
+            ctx.strokeStyle = sc.type === 'sperring' ? '#4466cc' : '#aa55dd';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            roundRect(ctx, bx, by, bw, bh, 8);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.font = '12px "Courier New",monospace';
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'center';
+            lines.forEach((line, li) => {
+                ctx.fillText(line, bx + bw / 2, by + pad + 12 + li * lineH);
+            });
+        }
+
+        ctx.restore();
+    });
+}
+
+// Spawn side characters every 30-60 seconds
+let sideCharSpawnTimer = 0;
+
+// ============================================
 // MAIN LOOP
 // ============================================
 let ambientSpawnTimer = 0;
@@ -1108,8 +1417,17 @@ function loop(timestamp) {
     updateParticles();
     drawParticles();
 
+    // Side characters
+    sideCharSpawnTimer++;
+    if (sideCharSpawnTimer > 1800 + Math.random() * 1800) { // 30-60s
+        spawnSideCharacter();
+        sideCharSpawnTimer = 0;
+    }
+    updateSideCharacters();
+
     updateRaanman(timestamp);
     drawRaanman(timestamp);
+    drawSideCharacters(timestamp);
     drawSpeechBubble();
     drawUniverseReveal(timestamp);
     drawHUD(timestamp);
