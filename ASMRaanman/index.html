@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASMRaanman - Your Desktop Companion</title>
+    <title>ASMRaanman - Your Digital Pet</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
@@ -17,423 +17,133 @@
             display: block;
             width: 100%;
             height: 100%;
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
         }
-        #customCursor {
-            position: fixed;
-            pointer-events: none;
-            z-index: 9999;
-            width: 20px;
-            height: 20px;
-            transform: translate(-50%, -50%);
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        body:hover #customCursor { opacity: 1; }
     </style>
 </head>
 <body>
 <canvas id="canvas"></canvas>
-<div id="customCursor"></div>
 <script>
 // ============================================
 // ASMRaanman - Desktop Companion Screensaver
 // ============================================
-
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
-// High-DPI support
 function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    generatePlatforms();
 }
 resize();
 window.addEventListener('resize', resize);
 
 // ============================================
-// SPRITE DATA - 32px Raanman (hand-crafted pixel art)
+// PLATFORM SYSTEM
 // ============================================
-// Colors: 0=transparent, 1=skin, 2=hair(dark), 3=shirt(green), 4=pants(dark blue),
-// 5=shoes(black), 6=eye white, 7=pupil, 8=mouth, 9=green glow, A=belt, B=highlight
+let platforms = [];
 
-const SPRITE_SCALE = 2; // Render at 64px display for crispness
-const SPRITE_W = 16;
-const SPRITE_H = 32;
+function generatePlatforms() {
+    platforms = [];
+    const W = canvas.width;
+    const H = canvas.height;
 
-const PALETTE = {
-    '0': null,                    // transparent
-    '1': '#f0c090',              // skin
-    '2': '#3a2820',              // hair dark
-    '3': '#00cc66',              // shirt green
-    '4': '#1a1a3e',             // pants
-    '5': '#111111',              // shoes
-    '6': '#ffffff',              // eye white
-    '7': '#111111',              // pupil
-    '8': '#cc4444',              // mouth
-    '9': '#00ff88',              // green glow/accent
-    'a': '#444444',              // belt
-    'b': '#80e0b0',              // shirt highlight
-    'c': '#d4a878',              // skin shadow
-    'd': '#2a1e18',              // hair darker
-    'e': '#006633',              // shirt shadow
-    'f': '#00ff88',              // eye glow when caught
-};
+    // Ground
+    platforms.push({ x: 0, y: H - 40, w: W, h: 40, type: 'ground' });
 
-// Sprite frames: idle, walk1, walk2, run1, run2, jump, caught, sleep
-const SPRITES = {
-    idle: [
-        '0000022220000000',
-        '0000222222000000',
-        '000d222222d00000',
-        '00022222222d0000',
-        '000221166122d000',
-        '000211776112d000',
-        '0001111111110000',
-        '00011118811c0000',
-        '0000c1111c000000',
-        '00000cccc0000000',
-        '000033333b000000',
-        '0003333b33300000',
-        '0003333b33300000',
-        '000e3339333e0000',
-        '000e3333333e0000',
-        '0003333333330000',
-        '0003333333330000',
-        '000e33333e3e0000',
-        '00003333b3000000',
-        '0000aaaa0a000000',
-        '0000444444000000',
-        '0000444444000000',
-        '0000444444000000',
-        '0000444444000000',
-        '0000444044000000',
-        '0000444044000000',
-        '0000444044000000',
-        '0000440044000000',
-        '0000550055000000',
-        '0000550055000000',
-        '0000555055500000',
-        '0000000000000000',
-    ],
-    walk1: [
-        '0000022220000000',
-        '0000222222000000',
-        '000d222222d00000',
-        '00022222222d0000',
-        '000221166122d000',
-        '000211776112d000',
-        '0001111111110000',
-        '00011118811c0000',
-        '0000c1111c000000',
-        '00000cccc0000000',
-        '000033333b000000',
-        '0003333b33300000',
-        '0003333b33300000',
-        '000e3339333e0000',
-        '000e3333333e0000',
-        '0003333333330000',
-        '0003333333330000',
-        '000e33333e3e0000',
-        '00003333b3000000',
-        '0000aaaa0a000000',
-        '0000444444000000',
-        '0000444444000000',
-        '0000444444000000',
-        '0000444444000000',
-        '0000444044000000',
-        '0000444044000000',
-        '0000044440000000',
-        '0000550044000000',
-        '0000550055000000',
-        '0005550055000000',
-        '0000000055500000',
-        '0000000000000000',
-    ],
-    walk2: [
-        '0000022220000000',
-        '0000222222000000',
-        '000d222222d00000',
-        '00022222222d0000',
-        '000221166122d000',
-        '000211776112d000',
-        '0001111111110000',
-        '00011118811c0000',
-        '0000c1111c000000',
-        '00000cccc0000000',
-        '000033333b000000',
-        '0003333b33300000',
-        '0003333b33300000',
-        '000e3339333e0000',
-        '000e3333333e0000',
-        '0003333333330000',
-        '0003333333330000',
-        '000e33333e3e0000',
-        '00003333b3000000',
-        '0000aaaa0a000000',
-        '0000444444000000',
-        '0000444444000000',
-        '0000444444000000',
-        '0000444444000000',
-        '0000444044000000',
-        '0000444044000000',
-        '0000440440000000',
-        '0000440055000000',
-        '0000550055000000',
-        '0000550555000000',
-        '0005550000000000',
-        '0000000000000000',
-    ],
-    jump: [
-        '0000022220000000',
-        '0000222222000000',
-        '000d222222d00000',
-        '00022222222d0000',
-        '000221166122d000',
-        '000211776112d000',
-        '0001111111110000',
-        '00011118811c0000',
-        '0000c1111c000000',
-        '00000cccc0000000',
-        '0093333b33390000',
-        '0903333b33309000',
-        '9003333b33300900',
-        '000e3339333e0000',
-        '000e3333333e0000',
-        '0003333333330000',
-        '0003333333330000',
-        '000e33333e3e0000',
-        '00003333b3000000',
-        '0000aaaa0a000000',
-        '0000444444000000',
-        '0000444444000000',
-        '0000444444000000',
-        '0000044440000000',
-        '0000044440000000',
-        '0000444444000000',
-        '0000440044000000',
-        '0000550055000000',
-        '0000550055000000',
-        '0005550055500000',
-        '0000000000000000',
-        '0000000000000000',
-    ],
-    scared: [
-        '0000022220000000',
-        '0000222222000000',
-        '000d222222d00000',
-        '00022222222d0000',
-        '000226166622d000',
-        '000216776612d000',
-        '0001111111110000',
-        '0001118888110000',
-        '0000c1111c000000',
-        '00000cccc0000000',
-        '000033333b000000',
-        '0003333b33300000',
-        '0003333b33300000',
-        '000e3339333e0000',
-        '000e3333333e0000',
-        '0003333333330000',
-        '0003333333330000',
-        '000e33333e3e0000',
-        '00003333b3000000',
-        '0000aaaa0a000000',
-        '0000444444000000',
-        '0000444444000000',
-        '0000444444000000',
-        '0000444444000000',
-        '0000444044000000',
-        '0000444044000000',
-        '0000444044000000',
-        '0000440044000000',
-        '0000550055000000',
-        '0000550055000000',
-        '0000555055500000',
-        '0000000000000000',
-    ],
-    caught: [
-        '0000022220000000',
-        '0000222222000000',
-        '000d222222d00000',
-        '00022222222d0000',
-        '000221ff1122d000',
-        '000211ff1112d000',
-        '0001111111110000',
-        '0001111111110000',
-        '0000c1881c000000',
-        '00000cccc0000000',
-        '9993333b33399900',
-        '9003333b33300900',
-        '0003333b33300000',
-        '000e3339333e0000',
-        '000e3333333e0000',
-        '0003333333330000',
-        '0003333333330000',
-        '000e33333e3e0000',
-        '00003333b3000000',
-        '0000aaaa0a000000',
-        '0000444444000000',
-        '0000444444000000',
-        '0000444444000000',
-        '0000444444000000',
-        '0000444044000000',
-        '0000444044000000',
-        '0000444044000000',
-        '0000440044000000',
-        '0000550055000000',
-        '0000550055000000',
-        '0000555055500000',
-        '0000000000000000',
-    ],
-    sleep: [
-        '0000000000000000',
-        '0000000000000000',
-        '0000000000000000',
-        '0000000000000000',
-        '0000000000000000',
-        '0000000000000000',
-        '0000000000000000',
-        '0000000000000000',
-        '0000022220000000',
-        '0000222222000000',
-        '000d222222d00000',
-        '00022222222d0000',
-        '0002277772200000',
-        '0002111111200000',
-        '0001111111110000',
-        '00011118811c0000',
-        '0000c1111c000000',
-        '00000cccc0000000',
-        '0000333b33000000',
-        '0000333933000000',
-        '0000333333000000',
-        '00003333b3000000',
-        '0000aaaa0a000000',
-        '0000444444000000',
-        '0000444444000000',
-        '0000444444000000',
-        '0000444444000000',
-        '0000444444000000',
-        '0000444444000000',
-        '0055555555555000',
-        '0055555555555000',
-        '0000000000000000',
-    ],
-};
+    // Generate platforms distributed across the screen
+    const cols = Math.floor(W / 250);
+    const rows = Math.floor(H / 180);
 
-// Pre-render sprites to offscreen canvases
-const spriteCanvases = {};
-const spriteCanvasesFlipped = {};
-
-function prerenderSprite(name, data) {
-    // Normal
-    const c = document.createElement('canvas');
-    c.width = SPRITE_W;
-    c.height = SPRITE_H;
-    const cctx = c.getContext('2d');
-    for (let y = 0; y < SPRITE_H; y++) {
-        const row = data[y];
-        if (!row) continue;
-        for (let x = 0; x < SPRITE_W; x++) {
-            const color = PALETTE[row[x]];
-            if (color) {
-                cctx.fillStyle = color;
-                cctx.fillRect(x, y, 1, 1);
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols + 1; c++) {
+            if (Math.random() < 0.55) {
+                const px = c * 250 + Math.random() * 120 - 30;
+                const py = H - 140 - r * 160 + Math.random() * 60;
+                if (py < 50 || py > H - 80) continue;
+                const pw = 60 + Math.random() * 100;
+                platforms.push({
+                    x: px,
+                    y: py,
+                    w: pw,
+                    h: 12,
+                    type: 'platform'
+                });
             }
         }
     }
-    spriteCanvases[name] = c;
 
-    // Flipped
-    const cf = document.createElement('canvas');
-    cf.width = SPRITE_W;
-    cf.height = SPRITE_H;
-    const cfctx = cf.getContext('2d');
-    cfctx.translate(SPRITE_W, 0);
-    cfctx.scale(-1, 1);
-    cfctx.drawImage(c, 0, 0);
-    spriteCanvasesFlipped[name] = cf;
+    // Ensure some high platforms exist
+    for (let i = 0; i < 3; i++) {
+        platforms.push({
+            x: Math.random() * (W - 120) + 40,
+            y: 80 + Math.random() * 120,
+            w: 70 + Math.random() * 80,
+            h: 12,
+            type: 'platform'
+        });
+    }
 }
 
-Object.keys(SPRITES).forEach(name => prerenderSprite(name, SPRITES[name]));
+function drawPlatforms(time) {
+    platforms.forEach(p => {
+        if (p.type === 'ground') {
+            // Ground - subtle line
+            ctx.fillStyle = '#0f0f1a';
+            ctx.fillRect(p.x, p.y, p.w, p.h);
+            ctx.strokeStyle = 'rgba(0, 255, 136, 0.15)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, p.y);
+            ctx.lineTo(canvas.width, p.y);
+            ctx.stroke();
+            // Tick marks
+            ctx.strokeStyle = 'rgba(0, 255, 136, 0.06)';
+            for (let x = 0; x < canvas.width; x += 40) {
+                ctx.beginPath();
+                ctx.moveTo(x + (time * 0.005) % 40, p.y);
+                ctx.lineTo(x + (time * 0.005) % 40, p.y + 5);
+                ctx.stroke();
+            }
+        } else {
+            // Floating platform
+            const grd = ctx.createLinearGradient(p.x, p.y, p.x, p.y + p.h);
+            grd.addColorStop(0, '#1a1a30');
+            grd.addColorStop(1, '#101020');
+            ctx.fillStyle = grd;
+            ctx.fillRect(p.x, p.y, p.w, p.h);
+
+            // Top edge glow
+            ctx.strokeStyle = 'rgba(0, 255, 136, 0.2)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p.x + p.w, p.y);
+            ctx.stroke();
+
+            // Circuit dots
+            ctx.fillStyle = 'rgba(0, 255, 136, 0.1)';
+            for (let i = 8; i < p.w - 8; i += 18) {
+                ctx.fillRect(p.x + i, p.y + 4, 3, 3);
+            }
+        }
+    });
+}
 
 // ============================================
-// TECH ONE-LINERS
-// ============================================
-const ONELINERS = [
-    "rm -rf / your expectations",
-    "I refactored my personality... still buggy",
-    "while(alive) { coffee++; }",
-    "My code compiles. I am suspicious.",
-    "Have you tried turning the universe off and on?",
-    "I dream in async/await...",
-    "My therapist says I have unresolved promises",
-    "sudo make me sandwich",
-    "404: motivation not found",
-    "git commit -m 'existential crisis'",
-    "Tabs vs spaces? I use feelings.",
-    "I benchmarked reality. 30fps, could be better.",
-    "I don't always test my code...\nbut when I do, it's in production",
-    "Segfault in the matrix detected",
-    "My love language is pull requests",
-    "Is this... a simulation? *checks DevTools*",
-    "I tried to center a div once.\nStill in therapy.",
-    "The cloud is just someone else's computer",
-    "I speak fluent regex... just kidding",
-    "npm install happiness\n... 0 vulnerabilities (impossible)",
-    "My brain has too many open tabs",
-    "Undefined is not a function of my personality",
-    "I put the 'fun' in undefined",
-    "Docker containerized my emotions",
-    "Machine learning taught me nothing",
-    "Blockchain is just a linked list with anxiety",
-    "*whispers in ASMR* ... semicolons are optional",
-    "*taps keyboard softly* ... shhhh... the code is sleeping",
-    "Let me tell you about Rust ownership...\nactually, let's not",
-    "Mina fraaaaames!",
-    "The answer is always 'more abstraction'",
-    "I deploy on Fridays. Fear me.",
-    "CSS is my love language... and it shows",
-    "I once wrote Python without a virtualenv.\nChaos.",
-];
-
-const CAUGHT_REVELATIONS = [
-    "The universe is just God's side project.\nNo unit tests.",
-    "Reality runs on a single-threaded event loop.\nThat's why time feels linear.",
-    "Consciousness is just recursion\nthat forgot its base case.",
-    "Dark matter is just commented-out code\nthe universe forgot to delete.",
-    "Free will is an illusion...\nbut at least the illusion has good UX.",
-    "The meaning of life?\nIt's in the README, but nobody reads it.",
-    "Time is just the universe's garbage collector.\nEventually it collects everything.",
-    "Love is O(n^2) complexity.\nBeautiful but doesn't scale.",
-    "Every atom is a pixel.\nResolution: absurdly high.",
-    "The Big Bang was just the universe\nrefreshing the page.",
-    "Deja vu is a cache hit.\nYour brain already loaded this moment.",
-    "Death is just the universe\ncalling .dispose() on your instance.",
-    "Gravity is CSS float.\nEverything just falls to the bottom.",
-    "Parallel universes are just\nGit branches nobody merged.",
-    "Dreams are your brain's\nstaging environment.",
-    "Every choice you didn't make\nis running on another server.",
-];
-
-// ============================================
-// PARTICLE SYSTEM
+// PARTICLES
 // ============================================
 const MAX_PARTICLES = 200;
 let particles = [];
 
 function spawnParticle(x, y, type) {
     if (particles.length >= MAX_PARTICLES) return;
-    const p = { x, y, type, life: 1, decay: 0.02, vx: 0, vy: 0, size: 3, rotation: 0 };
-
+    const p = { x, y, type, life: 1, decay: 0.02, vx: 0, vy: 0, size: 3 };
     if (type === 'dust') {
         p.vx = (Math.random() - 0.5) * 2;
         p.vy = -Math.random() * 1.5;
         p.size = Math.random() * 3 + 1;
         p.decay = 0.03;
-        p.color = '#665544';
+        p.color = '#554433';
     } else if (type === 'glow') {
         p.vx = (Math.random() - 0.5) * 3;
         p.vy = (Math.random() - 0.5) * 3;
@@ -444,13 +154,13 @@ function spawnParticle(x, y, type) {
         p.vx = (Math.random() - 0.5) * 8;
         p.vy = (Math.random() - 0.5) * 8;
         p.size = Math.random() * 3 + 1;
-        p.decay = 0.015;
-        p.color = ['#ffff00', '#ff00ff', '#00ffff', '#ff8800', '#ffffff'][Math.floor(Math.random() * 5)];
+        p.decay = 0.012;
+        p.color = ['#ffff00','#ff00ff','#00ffff','#ff8800','#ffffff'][Math.floor(Math.random()*5)];
     } else if (type === 'zzz') {
-        p.vx = Math.random() * 1 + 0.5;
-        p.vy = -Math.random() * 1 - 0.5;
-        p.size = Math.random() * 8 + 8;
-        p.decay = 0.008;
+        p.vx = Math.random() * 0.8 + 0.3;
+        p.vy = -Math.random() * 0.8 - 0.4;
+        p.size = Math.random() * 8 + 10;
+        p.decay = 0.006;
         p.text = 'z';
         p.color = '#4488ff';
     } else if (type === 'dollar') {
@@ -461,13 +171,13 @@ function spawnParticle(x, y, type) {
         p.text = '$';
         p.color = '#00cc44';
     } else if (type === 'universe') {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 6 + 2;
-        p.vx = Math.cos(angle) * speed;
-        p.vy = Math.sin(angle) * speed;
+        const a = Math.random() * Math.PI * 2;
+        const s = Math.random() * 6 + 2;
+        p.vx = Math.cos(a) * s;
+        p.vy = Math.sin(a) * s;
         p.size = Math.random() * 5 + 2;
         p.decay = 0.008;
-        p.color = `hsl(${Math.random() * 360}, 100%, 70%)`;
+        p.color = `hsl(${Math.random()*360},100%,70%)`;
     }
     particles.push(p);
 }
@@ -475,16 +185,11 @@ function spawnParticle(x, y, type) {
 function updateParticles() {
     for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life -= p.decay;
-        p.rotation += 0.05;
-
+        p.x += p.vx; p.y += p.vy; p.life -= p.decay;
         if (p.type === 'dust') p.vy -= 0.02;
         if (p.type === 'glow') { p.vx *= 0.98; p.vy *= 0.98; }
-        if (p.type === 'universe') { p.vy += 0.02; }
-        if (p.type === 'dollar') { p.vy += 0.1; }
-
+        if (p.type === 'universe') p.vy += 0.02;
+        if (p.type === 'dollar') p.vy += 0.1;
         if (p.life <= 0) particles.splice(i, 1);
     }
 }
@@ -493,9 +198,8 @@ function drawParticles() {
     particles.forEach(p => {
         ctx.save();
         ctx.globalAlpha = p.life;
-
         if (p.text) {
-            ctx.font = `${p.size}px 'Courier New', monospace`;
+            ctx.font = `${p.size}px "Courier New",monospace`;
             ctx.fillStyle = p.color;
             ctx.fillText(p.text, p.x, p.y);
         } else {
@@ -511,12 +215,12 @@ function drawParticles() {
 }
 
 // ============================================
-// BACKGROUND STARS (screen saver)
+// BACKGROUND
 // ============================================
 let bgStars = [];
 function initBgStars() {
     bgStars = [];
-    for (let i = 0; i < 120; i++) {
+    for (let i = 0; i < 100; i++) {
         bgStars.push({
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
@@ -529,251 +233,421 @@ function initBgStars() {
 initBgStars();
 
 function drawBackground(time) {
-    // Deep space gradient
     const grad = ctx.createRadialGradient(
-        canvas.width / 2, canvas.height / 2, 0,
-        canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) * 0.7
+        canvas.width/2, canvas.height/2, 0,
+        canvas.width/2, canvas.height/2, Math.max(canvas.width, canvas.height) * 0.7
     );
     grad.addColorStop(0, '#0d0d18');
     grad.addColorStop(1, '#050508');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Twinkling stars
     bgStars.forEach(s => {
-        const brightness = 0.3 + Math.sin(time * s.speed + s.phase) * 0.4 + 0.3;
-        ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
+        const b = 0.3 + Math.sin(time * s.speed + s.phase) * 0.35 + 0.3;
+        ctx.fillStyle = `rgba(255,255,255,${b})`;
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
         ctx.fill();
-
-        if (s.size > 1.5) {
-            ctx.fillStyle = `rgba(200, 220, 255, ${brightness * 0.2})`;
-            ctx.beginPath();
-            ctx.arc(s.x, s.y, s.size * 4, 0, Math.PI * 2);
-            ctx.fill();
-        }
     });
 
-    // Subtle nebula
-    const nebulaX = canvas.width * 0.7 + Math.sin(time * 0.0003) * 100;
-    const nebulaY = canvas.height * 0.3 + Math.cos(time * 0.0002) * 50;
-    const nGrad = ctx.createRadialGradient(nebulaX, nebulaY, 0, nebulaX, nebulaY, 300);
-    nGrad.addColorStop(0, 'rgba(0, 255, 136, 0.04)');
-    nGrad.addColorStop(0.5, 'rgba(100, 0, 255, 0.02)');
-    nGrad.addColorStop(1, 'transparent');
-    ctx.fillStyle = nGrad;
+    // Nebula
+    const nx = canvas.width * 0.7 + Math.sin(time * 0.0003) * 100;
+    const ny = canvas.height * 0.3 + Math.cos(time * 0.0002) * 50;
+    const ng = ctx.createRadialGradient(nx, ny, 0, nx, ny, 300);
+    ng.addColorStop(0, 'rgba(0,255,136,0.03)');
+    ng.addColorStop(0.5, 'rgba(100,0,255,0.015)');
+    ng.addColorStop(1, 'transparent');
+    ctx.fillStyle = ng;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Scanlines
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.06)';
+    ctx.fillStyle = 'rgba(0,0,0,0.05)';
     for (let y = 0; y < canvas.height; y += 4) {
         ctx.fillRect(0, y, canvas.width, 1);
     }
 }
 
 // ============================================
-// RAANMAN CHARACTER STATE
+// AMBIENT FLOATING TEXT
 // ============================================
-const raanman = {
-    x: 400,
-    y: 300,
-    vx: 0,
-    vy: 0,
-    speed: 1.5,
-    maxSpeed: 4,
-    fleeSpeed: 8,
-    facing: 1, // 1 = right, -1 = left
-    state: 'idle', // idle, wander, flee, caught, sleep, jump
-    frame: 0,
-    frameTimer: 0,
-    animSpeed: 12,
-    wanderTimer: 0,
-    wanderAngle: 0,
+let ambientTexts = [];
+const AMBIENT_WORDS = [
+    'async','await','const','void','null','undefined','{}','()','=> ','...',
+    '&&','||','===','fn()','loop','break','yield','import','export',
+    '0xFF','42','NaN','Infinity','true','sudo','grep',
+];
+function spawnAmbientText() {
+    if (ambientTexts.length > 15) return;
+    ambientTexts.push({
+        text: AMBIENT_WORDS[Math.floor(Math.random() * AMBIENT_WORDS.length)],
+        x: Math.random() * canvas.width,
+        y: canvas.height + 20,
+        vy: -0.2 - Math.random() * 0.3,
+        alpha: 0.05 + Math.random() * 0.03,
+        size: 10 + Math.random() * 6,
+    });
+}
+function updateAmbientTexts() {
+    for (let i = ambientTexts.length - 1; i >= 0; i--) {
+        ambientTexts[i].y += ambientTexts[i].vy;
+        if (ambientTexts[i].y < -30) ambientTexts.splice(i, 1);
+    }
+}
+function drawAmbientTexts() {
+    ctx.save();
+    ambientTexts.forEach(t => {
+        ctx.globalAlpha = t.alpha;
+        ctx.font = `${t.size}px "Courier New",monospace`;
+        ctx.fillStyle = '#00ff88';
+        ctx.fillText(t.text, t.x, t.y);
+    });
+    ctx.restore();
+}
+
+// ============================================
+// TECH ONE-LINERS & REVELATIONS
+// ============================================
+const ONELINERS = [
+    "Blender crashed again.\nMy 12-hour sculpt...\ngone. Like tears in rain.",
+    "while(alive) { coffee++; }",
+    "My code compiles.\nI am suspicious.",
+    "I dream in Blueprints...\nentire node graphs\nin my sleep",
+    "My therapist says I have\nunresolved promises",
+    "404: motivation not found",
+    "git commit -m\n'existential crisis'",
+    "I benchmarked reality.\n30fps, could be better.",
+    "I asked an LLM\nto write my code.\nIt wrote my resignation.",
+    "Segfault in the matrix detected",
+    "Is this... a simulation?\n*opens Unreal Engine*\nI could make a better one",
+    "I tried to center a div once.\nStill in therapy.",
+    "My Blender donut took\n47 attempts.\nWorth it.",
+    "*whispers in ASMR*\n...semicolons are optional",
+    "*taps keyboard softly*\nshhhh...\nthe shader is compiling",
+    "Mina fraaaaames!",
+    "I deploy on Fridays.\nFear me.",
+    "I once wrote Python\nwithout a virtualenv.\nChaos.",
+    "*adjusts tiny sunglasses*\nI see through the matrix",
+    "My turtleneck contains\n99% of my power",
+    "Unreal Engine:\nwhere your GPU goes\nto find religion",
+    "Python is just\npseudocode that runs.\nAnd I love it.",
+    "The LLM said my code\nwas 'interesting'.\nI felt judged.",
+    "Blender UV unwrapping\nis my villain origin story",
+    "import antigravity\n...wait that actually works\nin Python",
+    "My Unreal project\nhas more Blueprints\nthan an architect's office",
+    "I trained an LLM on\nmy commit messages.\nIt learned to cry.",
+    "Ctrl+Z is my love language.\nBlender taught me that.",
+    "*opens task manager*\nUnreal Engine: 98% RAM\nBlender: 97% RAM\nChrome: yes",
+    "I asked ChatGPT to review\nmy Blueprints.\nIt said 'seek help'.",
+    "Subsurface scattering\nis why I got into 3D.\nSkin is beautiful.",
+    "Python one-liner?\nMore like Python one-liner\nthat spans 400 characters",
+    "Nanite and Lumen\nchanged my life.\nMy electricity bill too.",
+    "Every vertex\nis a decision.\nEvery face, a commitment.",
+];
+const CAUGHT_REVELATIONS = [
+    "The universe is just\nGod's side project.\nNo unit tests.",
+    "Reality runs on a\nsingle-threaded event loop.\nThat's why time feels linear.",
+    "Consciousness is just recursion\nthat forgot its base case.",
+    "Dark matter is\ncommented-out code\nthe universe forgot to delete.",
+    "Free will is an illusion...\nbut at least the illusion\nhas good UX.",
+    "The meaning of life?\nIt's in the README,\nbut nobody reads it.",
+    "The universe is a\nBlender scene.\nSomeone forgot to\nsmooth-shade it.",
+    "Every atom is a vertex.\nReality has a higher\npoly count than you think.",
+    "The Big Bang was God\nhitting Play in Unreal Engine.\nNo optimization pass.",
+    "Deja vu is a cache hit.\nYour brain already\nloaded this moment.",
+    "Parallel universes are just\nGit branches nobody merged.",
+    "Dreams are your brain's\nstaging environment.",
+    "LLMs don't understand.\nBut neither do we.\nWe just pretend better.",
+    "Gravity is CSS float.\nEverything just falls\nto the bottom.",
+    "Reality is procedurally\ngenerated. God used\na seed value. It's 42.",
+    "The universe compiles.\nBut nobody has seen\nthe source code.\nNot even the LLMs.",
+];
+
+// ============================================
+// RAANMAN CHARACTER - matches main game look!
+// Bald head, tiny sunglasses, black turtleneck,
+// slight smirk, dark pants, animated legs
+// ============================================
+const R = {
+    x: 400, y: 300,
+    vx: 0, vy: 0,
+    speed: 1.5, maxSpeed: 4, fleeSpeed: 9,
+    facing: 1,
+    state: 'idle',
+    grounded: true,
+    groundY: 0,
+    currentPlatform: null,
+    frame: 0, frameTimer: 0,
+    wanderTimer: 0, wanderDir: 0,
     idleTimer: 0,
-    speechBubble: null,
-    speechTimer: 0,
-    catchTimer: 0,
     sleepTimer: 0,
-    jumpVy: 0,
-    baseY: 0,
-    jumpTimer: 0,
-    awareness: 200, // How far away he detects mouse
+    speechBubble: null, speechTimer: 0,
+    catchTimer: 0,
     panicLevel: 0,
     caughtCount: 0,
-    idleAnimTimer: 0,
-    groundY: 0,
-    grounded: true,
     dustTimer: 0,
     glowRadius: 0,
     revelationShown: false,
+    awareness: 180,
+    jumpTarget: null, // platform to jump to
+    legAnim: 0,
+    squash: 1, stretch: 1,
 };
 
-// Ground level
-raanman.groundY = canvas.height - 80;
-raanman.y = raanman.groundY;
-raanman.baseY = raanman.groundY;
+// Character size (drawn procedurally like the main game)
+const CHAR_W = 30;
+const CHAR_H = 55;
 
-// Mouse tracking with prediction
-let mouse = { x: -1000, y: -1000, vx: 0, vy: 0, lastX: -1000, lastY: -1000, active: false };
-let lastMouseMove = 0;
+function drawRaanmanBody(x, y, squash, stretch, facing) {
+    ctx.save();
+    ctx.translate(x + CHAR_W/2, y + CHAR_H);
+    ctx.scale(squash * facing, stretch);
+    ctx.translate(-(x + CHAR_W/2), -(y + CHAR_H));
 
-document.addEventListener('mousemove', (e) => {
-    mouse.vx = e.clientX - mouse.x;
-    mouse.vy = e.clientY - mouse.y;
-    mouse.lastX = mouse.x;
-    mouse.lastY = mouse.y;
-    mouse.x = e.clientX;
-    mouse.y = e.clientY;
-    mouse.active = true;
-    lastMouseMove = performance.now();
-});
+    const bx = x; // base x
+    const by = y + CHAR_H; // feet y
 
-document.addEventListener('mouseleave', () => { mouse.active = false; });
-document.addEventListener('mouseenter', () => { mouse.active = true; });
+    // Black turtleneck body
+    ctx.fillStyle = '#111';
+    ctx.fillRect(bx + 5, by - 30, 20, 25);
 
-document.addEventListener('click', (e) => {
-    if (raanman.state === 'caught') return;
+    // Turtleneck collar
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(bx + 3, by - 32, 24, 8);
 
-    const dx = e.clientX - (raanman.x + SPRITE_W * SPRITE_SCALE / 2);
-    const dy = e.clientY - (raanman.y + SPRITE_H * SPRITE_SCALE / 2);
-    const dist = Math.sqrt(dx * dx + dy * dy);
+    // Bald head - devastatingly smooth
+    ctx.fillStyle = '#ffdbac';
+    ctx.shadowColor = '#ffdbac';
+    ctx.shadowBlur = 5;
+    ctx.beginPath();
+    ctx.arc(bx + 15, by - 38, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
 
-    if (dist < 50) {
-        catchRaanman();
+    // Tiny sunglasses
+    if (R.state === 'sleep') {
+        // Closed eyes when sleeping
+        ctx.strokeStyle = '#555';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(bx + 8, by - 39);
+        ctx.lineTo(bx + 13, by - 39);
+        ctx.moveTo(bx + 17, by - 39);
+        ctx.lineTo(bx + 22, by - 39);
+        ctx.stroke();
+    } else if (R.state === 'caught') {
+        // Glowing eyes when caught
+        ctx.fillStyle = '#00ff88';
+        ctx.shadowColor = '#00ff88';
+        ctx.shadowBlur = 8;
+        ctx.fillRect(bx + 7, by - 41, 6, 3);
+        ctx.fillRect(bx + 17, by - 41, 6, 3);
+        ctx.shadowBlur = 0;
     } else {
-        // Click somewhere else - he comments on it
-        if (raanman.state !== 'sleep') {
-            showSpeech(ONELINERS[Math.floor(Math.random() * ONELINERS.length)]);
-            raanman.state = 'idle';
-            raanman.idleTimer = 120;
+        // Normal tiny sunglasses
+        ctx.fillStyle = '#000';
+        ctx.fillRect(bx + 7, by - 41, 6, 3);
+        ctx.fillRect(bx + 17, by - 41, 6, 3);
+        ctx.fillRect(bx + 13, by - 40, 4, 1);
+
+        // Reflection on glasses
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.fillRect(bx + 8, by - 41, 2, 1);
+        ctx.fillRect(bx + 18, by - 41, 2, 1);
+
+        // Scared wide eyes peek above glasses
+        if (R.panicLevel > 0.5) {
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(bx + 8, by - 43, 4, 2);
+            ctx.fillRect(bx + 18, by - 43, 4, 2);
+            ctx.fillStyle = '#111';
+            ctx.fillRect(bx + 9, by - 43, 2, 2);
+            ctx.fillRect(bx + 19, by - 43, 2, 2);
         }
     }
-});
 
-// ============================================
-// SPEECH BUBBLE
-// ============================================
-function showSpeech(text, duration = 300) {
-    raanman.speechBubble = text;
-    raanman.speechTimer = duration;
-}
+    // Slight smirk
+    if (R.state === 'caught') {
+        // Open mouth in awe
+        ctx.fillStyle = '#222';
+        ctx.beginPath();
+        ctx.arc(bx + 15, by - 33, 3, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (R.state === 'sleep') {
+        // Peaceful
+        ctx.strokeStyle = '#995533';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(bx + 15, by - 34, 3, 0.3, Math.PI - 0.3);
+        ctx.stroke();
+    } else if (R.panicLevel > 0.3) {
+        // Open scared mouth
+        ctx.fillStyle = '#cc4444';
+        ctx.beginPath();
+        ctx.ellipse(bx + 15, by - 33, 3, 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+    } else {
+        // Classic smirk
+        ctx.strokeStyle = '#995533';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(bx + 15, by - 33, 4, 0.2, Math.PI - 0.2);
+        ctx.stroke();
+    }
 
-function drawSpeechBubble() {
-    if (!raanman.speechBubble || raanman.speechTimer <= 0) return;
+    // Arms
+    ctx.fillStyle = '#111';
+    if (R.state === 'caught') {
+        // Arms up in wonder
+        ctx.fillRect(bx - 2, by - 34, 6, 3);
+        ctx.fillRect(bx + 26, by - 34, 6, 3);
+        ctx.fillRect(bx - 4, by - 42, 4, 10);
+        ctx.fillRect(bx + 30, by - 42, 4, 10);
+    } else if (R.state === 'flee') {
+        // Pumping arms
+        const armSwing = Math.sin(R.legAnim * 0.5) * 5;
+        ctx.fillRect(bx - 1, by - 28 + armSwing, 5, 12);
+        ctx.fillRect(bx + 26, by - 28 - armSwing, 5, 12);
+    } else {
+        // Relaxed
+        ctx.fillRect(bx + 1, by - 26, 4, 14);
+        ctx.fillRect(bx + 25, by - 26, 4, 14);
+    }
 
-    const lines = raanman.speechBubble.split('\n');
-    const lineHeight = 16;
-    const padding = 12;
-    const maxWidth = Math.max(...lines.map(l => l.length)) * 8.5;
-    const bubbleW = Math.min(maxWidth + padding * 2, 360);
-    const bubbleH = lines.length * lineHeight + padding * 2;
+    // Legs with walking animation
+    ctx.fillStyle = '#222';
+    const legOffset = R.grounded ? Math.sin(R.legAnim * 0.3) * (Math.abs(R.vx) > 1 ? 4 : 0) : 3;
+    ctx.fillRect(bx + 7, by - 5 - legOffset, 6, 10 + legOffset);
+    ctx.fillRect(bx + 17, by - 5 + legOffset, 6, 10 - legOffset);
 
-    const bx = raanman.x + (SPRITE_W * SPRITE_SCALE) / 2 - bubbleW / 2;
-    const by = raanman.y - bubbleH - 25;
-
-    const alpha = Math.min(1, raanman.speechTimer / 30);
-
-    ctx.save();
-    ctx.globalAlpha = alpha;
-
-    // Bubble background
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-    ctx.strokeStyle = '#00ff88';
-    ctx.lineWidth = 2;
-
-    // Rounded rect
-    const r = 8;
-    ctx.beginPath();
-    ctx.moveTo(bx + r, by);
-    ctx.lineTo(bx + bubbleW - r, by);
-    ctx.quadraticCurveTo(bx + bubbleW, by, bx + bubbleW, by + r);
-    ctx.lineTo(bx + bubbleW, by + bubbleH - r);
-    ctx.quadraticCurveTo(bx + bubbleW, by + bubbleH, bx + bubbleW - r, by + bubbleH);
-    ctx.lineTo(bx + r, by + bubbleH);
-    ctx.quadraticCurveTo(bx, by + bubbleH, bx, by + bubbleH - r);
-    ctx.lineTo(bx, by + r);
-    ctx.quadraticCurveTo(bx, by, bx + r, by);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-
-    // Pointer triangle
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-    ctx.strokeStyle = '#00ff88';
-    ctx.beginPath();
-    ctx.moveTo(raanman.x + SPRITE_W * SPRITE_SCALE / 2 - 8, by + bubbleH);
-    ctx.lineTo(raanman.x + SPRITE_W * SPRITE_SCALE / 2, by + bubbleH + 12);
-    ctx.lineTo(raanman.x + SPRITE_W * SPRITE_SCALE / 2 + 8, by + bubbleH);
-    ctx.fill();
-    ctx.stroke();
-
-    // Text
-    ctx.font = '14px "Courier New", monospace';
-    ctx.fillStyle = '#00ff88';
-    ctx.textAlign = 'center';
-    lines.forEach((line, i) => {
-        ctx.fillText(line, bx + bubbleW / 2, by + padding + 12 + i * lineHeight);
-    });
+    // Shoes
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(bx + 5, by + 4 - legOffset, 9, 3);
+    ctx.fillRect(bx + 16, by + 4 + legOffset, 9, 3);
 
     ctx.restore();
 }
 
 // ============================================
-// CATCH MECHANIC
+// SPEECH BUBBLE - LONGER DURATION
 // ============================================
-function catchRaanman() {
-    raanman.state = 'caught';
-    raanman.catchTimer = 600;
-    raanman.caughtCount++;
-    raanman.vx = 0;
-    raanman.vy = 0;
-    raanman.revelationShown = false;
+function showSpeech(text, duration) {
+    R.speechBubble = text;
+    // Scale duration by line count for readability (min 400 frames ~6.5s)
+    const lines = text.split('\n').length;
+    R.speechTimer = duration || Math.max(400, lines * 180);
+}
 
-    // Explosion of particles
-    for (let i = 0; i < 40; i++) {
-        spawnParticle(
-            raanman.x + SPRITE_W * SPRITE_SCALE / 2,
-            raanman.y + SPRITE_H * SPRITE_SCALE / 2,
-            'universe'
-        );
-    }
-    for (let i = 0; i < 15; i++) {
-        spawnParticle(
-            raanman.x + SPRITE_W * SPRITE_SCALE / 2,
-            raanman.y + SPRITE_H * SPRITE_SCALE / 2,
-            'star'
-        );
-    }
+function drawSpeechBubble() {
+    if (!R.speechBubble || R.speechTimer <= 0) return;
+
+    const lines = R.speechBubble.split('\n');
+    const lineHeight = 18;
+    const padding = 14;
+    const maxLineW = Math.max(...lines.map(l => ctx.measureText ? l.length : l.length)) * 9;
+    const bubbleW = Math.min(Math.max(maxLineW + padding * 2, 140), 380);
+    const bubbleH = lines.length * lineHeight + padding * 2;
+
+    // Position above raanman, clamped to screen
+    let bx = R.x + CHAR_W / 2 - bubbleW / 2;
+    let by = R.y - bubbleH - 20;
+    bx = Math.max(8, Math.min(canvas.width - bubbleW - 8, bx));
+    if (by < 10) by = R.y + CHAR_H + 15; // Below if no room above
+
+    // Fade in/out
+    const fadeIn = Math.min(1, (R.speechTimer > 40) ? 1 : R.speechTimer / 40);
+    const alpha = fadeIn;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.beginPath();
+    roundRect(ctx, bx + 3, by + 3, bubbleW, bubbleH, 10);
+    ctx.fill();
+
+    // Bubble
+    ctx.fillStyle = 'rgba(5, 5, 15, 0.92)';
+    ctx.strokeStyle = '#00ff88';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    roundRect(ctx, bx, by, bubbleW, bubbleH, 10);
+    ctx.fill();
+    ctx.stroke();
+
+    // Pointer
+    const pointerX = Math.max(bx + 15, Math.min(bx + bubbleW - 15, R.x + CHAR_W / 2));
+    const pointerBaseY = (by > R.y) ? by : by + bubbleH;
+    const pointerTipY = (by > R.y) ? by - 10 : by + bubbleH + 10;
+    ctx.fillStyle = 'rgba(5, 5, 15, 0.92)';
+    ctx.beginPath();
+    ctx.moveTo(pointerX - 8, pointerBaseY);
+    ctx.lineTo(pointerX, pointerTipY);
+    ctx.lineTo(pointerX + 8, pointerBaseY);
+    ctx.fill();
+    ctx.strokeStyle = '#00ff88';
+    ctx.beginPath();
+    ctx.moveTo(pointerX - 8, pointerBaseY);
+    ctx.lineTo(pointerX, pointerTipY);
+    ctx.lineTo(pointerX + 8, pointerBaseY);
+    ctx.stroke();
+
+    // Text
+    ctx.font = '14px "Courier New",monospace';
+    ctx.fillStyle = '#00ff88';
+    ctx.textAlign = 'center';
+    lines.forEach((line, i) => {
+        ctx.fillText(line, bx + bubbleW / 2, by + padding + 14 + i * lineHeight);
+    });
+
+    ctx.restore();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
 }
 
 // ============================================
-// UNIVERSE REVEAL EFFECT
+// CATCH MECHANIC & UNIVERSE REVEAL
 // ============================================
 let universeReveal = { active: false, radius: 0, targetRadius: 0, alpha: 0, text: '' };
 
+function catchRaanman() {
+    R.state = 'caught';
+    R.catchTimer = 700;
+    R.caughtCount++;
+    R.vx = 0; R.vy = 0;
+    R.revelationShown = false;
+
+    for (let i = 0; i < 50; i++) spawnParticle(R.x + CHAR_W/2, R.y + CHAR_H/2, 'universe');
+    for (let i = 0; i < 15; i++) spawnParticle(R.x + CHAR_W/2, R.y + CHAR_H/2, 'star');
+}
+
 function drawUniverseReveal(time) {
     if (!universeReveal.active) return;
-
     universeReveal.radius += (universeReveal.targetRadius - universeReveal.radius) * 0.03;
-    universeReveal.alpha = Math.min(universeReveal.alpha + 0.01, 0.9);
+    universeReveal.alpha = Math.min(universeReveal.alpha + 0.008, 0.85);
 
-    const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
-
+    const cx = canvas.width / 2, cy = canvas.height / 2;
     ctx.save();
 
-    // Cosmic background
-    const rGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, universeReveal.radius);
-    rGrad.addColorStop(0, `rgba(20, 0, 50, ${universeReveal.alpha})`);
-    rGrad.addColorStop(0.5, `rgba(0, 20, 40, ${universeReveal.alpha * 0.8})`);
-    rGrad.addColorStop(1, 'transparent');
-    ctx.fillStyle = rGrad;
+    const rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, universeReveal.radius);
+    rg.addColorStop(0, `rgba(20,0,50,${universeReveal.alpha})`);
+    rg.addColorStop(0.5, `rgba(0,20,40,${universeReveal.alpha * 0.8})`);
+    rg.addColorStop(1, 'transparent');
+    ctx.fillStyle = rg;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Swirling cosmic ring
     if (universeReveal.radius > 50) {
-        ctx.strokeStyle = `rgba(0, 255, 136, ${universeReveal.alpha * 0.3})`;
+        ctx.strokeStyle = `rgba(0,255,136,${universeReveal.alpha * 0.3})`;
         ctx.lineWidth = 2;
         for (let i = 0; i < 3; i++) {
             ctx.beginPath();
@@ -783,22 +657,18 @@ function drawUniverseReveal(time) {
         }
     }
 
-    // Revelation text
     if (universeReveal.radius > 200 && universeReveal.text) {
-        const textAlpha = Math.min(1, (universeReveal.radius - 200) / 100);
-        ctx.globalAlpha = textAlpha;
-        ctx.font = '20px "Courier New", monospace';
-        ctx.fillStyle = '#ffffff';
+        const ta = Math.min(1, (universeReveal.radius - 200) / 100);
+        ctx.globalAlpha = ta;
+        ctx.font = '22px "Courier New",monospace';
+        ctx.fillStyle = '#fff';
         ctx.textAlign = 'center';
         ctx.shadowColor = '#00ff88';
         ctx.shadowBlur = 20;
-
-        const lines = universeReveal.text.split('\n');
-        lines.forEach((line, i) => {
-            ctx.fillText(line, cx, cy - (lines.length * 12) + i * 28);
+        universeReveal.text.split('\n').forEach((line, i, arr) => {
+            ctx.fillText(line, cx, cy - (arr.length * 14) + i * 30);
         });
     }
-
     ctx.restore();
 }
 
@@ -807,359 +677,316 @@ function drawUniverseReveal(time) {
 // ============================================
 function drawCursor(time) {
     if (!mouse.active) return;
-
     ctx.save();
-
-    // Outer ring
     const pulse = Math.sin(time * 0.005) * 3;
-    ctx.strokeStyle = `rgba(0, 255, 136, ${raanman.state === 'caught' ? 0.2 : 0.6})`;
+    ctx.strokeStyle = `rgba(0,255,136,0.5)`;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(mouse.x, mouse.y, 12 + pulse, 0, Math.PI * 2);
     ctx.stroke();
-
-    // Crosshair
-    ctx.strokeStyle = `rgba(0, 255, 136, 0.8)`;
+    ctx.strokeStyle = `rgba(0,255,136,0.8)`;
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(mouse.x - 6, mouse.y);
-    ctx.lineTo(mouse.x + 6, mouse.y);
-    ctx.moveTo(mouse.x, mouse.y - 6);
-    ctx.lineTo(mouse.x, mouse.y + 6);
+    ctx.moveTo(mouse.x - 6, mouse.y); ctx.lineTo(mouse.x + 6, mouse.y);
+    ctx.moveTo(mouse.x, mouse.y - 6); ctx.lineTo(mouse.x, mouse.y + 6);
     ctx.stroke();
-
-    // Glow
-    ctx.fillStyle = `rgba(0, 255, 136, 0.15)`;
-    ctx.beginPath();
-    ctx.arc(mouse.x, mouse.y, 20, 0, Math.PI * 2);
-    ctx.fill();
-
     ctx.restore();
 }
 
 // ============================================
-// FLOOR LINE
+// MOUSE
 // ============================================
-function drawFloor(time) {
-    const floorY = raanman.groundY + SPRITE_H * SPRITE_SCALE + 4;
+let mouse = { x: -1000, y: -1000, vx: 0, vy: 0, active: false };
+let lastMouseMove = 0;
 
-    // Main line
-    ctx.strokeStyle = 'rgba(0, 255, 136, 0.15)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, floorY);
-    ctx.lineTo(canvas.width, floorY);
-    ctx.stroke();
-
-    // Tick marks
-    ctx.strokeStyle = 'rgba(0, 255, 136, 0.07)';
-    for (let x = 0; x < canvas.width; x += 40) {
-        ctx.beginPath();
-        ctx.moveTo(x + (time * 0.01) % 40, floorY);
-        ctx.lineTo(x + (time * 0.01) % 40, floorY + 6);
-        ctx.stroke();
+document.addEventListener('mousemove', e => {
+    mouse.vx = e.clientX - mouse.x;
+    mouse.vy = e.clientY - mouse.y;
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+    mouse.active = true;
+    lastMouseMove = performance.now();
+});
+document.addEventListener('mouseleave', () => { mouse.active = false; });
+document.addEventListener('mouseenter', () => { mouse.active = true; });
+document.addEventListener('click', e => {
+    if (R.state === 'caught') return;
+    const dx = e.clientX - (R.x + CHAR_W/2);
+    const dy = e.clientY - (R.y + CHAR_H/2);
+    if (Math.sqrt(dx*dx + dy*dy) < 45) {
+        catchRaanman();
+    } else if (R.state !== 'sleep') {
+        showSpeech(ONELINERS[Math.floor(Math.random() * ONELINERS.length)]);
+        R.state = 'idle';
+        R.idleTimer = 180;
     }
-
-    // Raanman shadow
-    const shadowX = raanman.x + SPRITE_W * SPRITE_SCALE / 2;
-    const jumpHeight = raanman.groundY - raanman.y;
-    const shadowScale = Math.max(0.3, 1 - jumpHeight / 200);
-    const shadowWidth = SPRITE_W * SPRITE_SCALE * 0.6 * shadowScale;
-
-    ctx.fillStyle = `rgba(0, 0, 0, ${0.3 * shadowScale})`;
-    ctx.beginPath();
-    ctx.ellipse(shadowX, floorY, shadowWidth, 4 * shadowScale, 0, 0, Math.PI * 2);
-    ctx.fill();
-}
+});
 
 // ============================================
-// AMBIENT TEXT - floating tech words
+// RAANMAN AI
 // ============================================
-let ambientTexts = [];
-const AMBIENT_WORDS = [
-    'async', 'await', 'const', 'void', 'null', 'undefined',
-    '{}', '()', '=>', '...', '&&', '||', '===', '!==',
-    'fn()', 'loop', 'break', 'yield', 'import', 'export',
-    '0xFF', '0b1010', '42', 'NaN', 'Infinity', 'true',
-];
-
-function spawnAmbientText() {
-    if (ambientTexts.length > 15) return;
-    ambientTexts.push({
-        text: AMBIENT_WORDS[Math.floor(Math.random() * AMBIENT_WORDS.length)],
-        x: Math.random() * canvas.width,
-        y: canvas.height + 20,
-        vy: -0.3 - Math.random() * 0.4,
-        alpha: 0.06 + Math.random() * 0.04,
-        size: 10 + Math.random() * 6,
-    });
-}
-
-function updateAmbientTexts() {
-    for (let i = ambientTexts.length - 1; i >= 0; i--) {
-        ambientTexts[i].y += ambientTexts[i].vy;
-        if (ambientTexts[i].y < -30) ambientTexts.splice(i, 1);
-    }
-}
-
-function drawAmbientTexts() {
-    ctx.save();
-    ambientTexts.forEach(t => {
-        ctx.globalAlpha = t.alpha;
-        ctx.font = `${t.size}px "Courier New", monospace`;
-        ctx.fillStyle = '#00ff88';
-        ctx.fillText(t.text, t.x, t.y);
-    });
-    ctx.restore();
-}
-
-// ============================================
-// RAANMAN AI UPDATE
-// ============================================
-function updateRaanman(time) {
-    const dt = 1; // Fixed timestep for simplicity
-
-    // Ground level adjusts to canvas
-    raanman.groundY = canvas.height - 80;
-
-    // Speech timer
-    if (raanman.speechTimer > 0) raanman.speechTimer--;
-
-    // Dust particles when moving on ground
-    if (raanman.grounded && Math.abs(raanman.vx) > 1.5) {
-        raanman.dustTimer++;
-        if (raanman.dustTimer % 6 === 0) {
-            spawnParticle(
-                raanman.x + SPRITE_W * SPRITE_SCALE / 2,
-                raanman.y + SPRITE_H * SPRITE_SCALE,
-                'dust'
-            );
+function findPlatformBelow(x, y) {
+    let best = null;
+    let bestY = Infinity;
+    platforms.forEach(p => {
+        if (x + CHAR_W > p.x + 5 && x < p.x + p.w - 5 && p.y >= y + CHAR_H - 2 && p.y < bestY) {
+            best = p;
+            bestY = p.y;
         }
+    });
+    return best;
+}
+
+function findNearbyPlatform() {
+    // Find a random platform raanman could jump to
+    const candidates = platforms.filter(p => {
+        if (p.type === 'ground') return false;
+        const dx = (p.x + p.w/2) - (R.x + CHAR_W/2);
+        const dy = (p.y) - (R.y + CHAR_H);
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        return dist < 350 && dist > 50;
+    });
+    return candidates.length > 0 ? candidates[Math.floor(Math.random() * candidates.length)] : null;
+}
+
+function updateRaanman(time) {
+    R.legAnim += Math.abs(R.vx) * 0.5 + (R.state === 'flee' ? 2 : 0);
+
+    // Speech
+    if (R.speechTimer > 0) R.speechTimer--;
+
+    // Dust when running on ground
+    if (R.grounded && Math.abs(R.vx) > 2) {
+        R.dustTimer++;
+        if (R.dustTimer % 5 === 0) spawnParticle(R.x + CHAR_W/2, R.y + CHAR_H, 'dust');
     }
 
-    // ---- STATE MACHINE ----
-    if (raanman.state === 'caught') {
-        raanman.catchTimer--;
-        raanman.glowRadius = Math.min(raanman.glowRadius + 2, 80);
+    // Squash/stretch recovery
+    R.squash += (1 - R.squash) * 0.15;
+    R.stretch += (1 - R.stretch) * 0.15;
 
-        // Show revelation
-        if (raanman.catchTimer < 500 && !raanman.revelationShown) {
-            raanman.revelationShown = true;
+    // ---- CAUGHT STATE ----
+    if (R.state === 'caught') {
+        R.catchTimer--;
+        R.glowRadius = Math.min(R.glowRadius + 2, 80);
+        if (R.catchTimer < 580 && !R.revelationShown) {
+            R.revelationShown = true;
             const rev = CAUGHT_REVELATIONS[Math.floor(Math.random() * CAUGHT_REVELATIONS.length)];
-            showSpeech(rev, 450);
+            showSpeech(rev, 500);
             universeReveal.active = true;
             universeReveal.radius = 0;
             universeReveal.targetRadius = Math.max(canvas.width, canvas.height);
             universeReveal.alpha = 0;
             universeReveal.text = rev;
         }
-
-        // Spawn universe particles
-        if (raanman.catchTimer % 5 === 0) {
-            spawnParticle(
-                raanman.x + SPRITE_W * SPRITE_SCALE / 2 + (Math.random() - 0.5) * 40,
-                raanman.y + SPRITE_H * SPRITE_SCALE / 2 + (Math.random() - 0.5) * 40,
-                'universe'
-            );
+        if (R.catchTimer % 4 === 0) {
+            spawnParticle(R.x + CHAR_W/2 + (Math.random()-0.5)*40,
+                R.y + CHAR_H/2 + (Math.random()-0.5)*40, 'universe');
         }
-
-        if (raanman.catchTimer <= 0) {
-            raanman.state = 'idle';
-            raanman.idleTimer = 120;
-            raanman.glowRadius = 0;
+        if (R.catchTimer <= 0) {
+            R.state = 'idle';
+            R.idleTimer = 180;
+            R.glowRadius = 0;
             universeReveal.active = false;
-            showSpeech("...where was I? Oh right.\nwhile(alive) { optimize(); }", 200);
+            showSpeech("...where was I?\nOh right.\n*resumes being your\ndigital pet*");
         }
         return;
     }
 
-    if (raanman.state === 'sleep') {
-        raanman.sleepTimer--;
-        if (raanman.sleepTimer % 60 === 0) {
-            spawnParticle(raanman.x + SPRITE_W * SPRITE_SCALE + 5, raanman.y, 'zzz');
-        }
-
-        // Mouse proximity wakes him up
-        const dx = mouse.x - raanman.x;
-        const dy = mouse.y - raanman.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if ((mouse.active && dist < raanman.awareness) || raanman.sleepTimer <= 0) {
-            raanman.state = 'idle';
-            raanman.idleTimer = 60;
-            if (dist < raanman.awareness) {
-                showSpeech("*yawn* ...was I sleeping\non the job again?", 180);
-            }
+    // ---- SLEEP STATE ----
+    if (R.state === 'sleep') {
+        R.sleepTimer--;
+        if (R.sleepTimer % 50 === 0) spawnParticle(R.x + CHAR_W + 5, R.y + 10, 'zzz');
+        const dx = mouse.x - R.x, dy = mouse.y - R.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if ((mouse.active && dist < R.awareness) || R.sleepTimer <= 0) {
+            R.state = 'idle';
+            R.idleTimer = 90;
+            if (dist < R.awareness) showSpeech("*yawn* ...was I sleeping\non the job again?");
         }
         return;
     }
 
-    // ---- MOUSE DETECTION & FLEEING ----
+    // ---- MOUSE FLEE ----
     if (mouse.active) {
-        const dx = mouse.x - (raanman.x + SPRITE_W * SPRITE_SCALE / 2);
-        const dy = mouse.y - (raanman.y + SPRITE_H * SPRITE_SCALE / 2);
-        const dist = Math.sqrt(dx * dx + dy * dy);
+        const dx = mouse.x - (R.x + CHAR_W/2);
+        const dy = mouse.y - (R.y + CHAR_H/2);
+        const dist = Math.sqrt(dx*dx + dy*dy);
 
-        // PREDICT where mouse is heading
-        const predictX = mouse.x + mouse.vx * 10;
-        const predictY = mouse.y + mouse.vy * 10;
-        const pdx = predictX - (raanman.x + SPRITE_W * SPRITE_SCALE / 2);
-        const pdy = predictY - (raanman.y + SPRITE_H * SPRITE_SCALE / 2);
-        const predictDist = Math.sqrt(pdx * pdx + pdy * pdy);
+        // Predict cursor
+        const predX = mouse.x + mouse.vx * 10;
+        const predY = mouse.y + mouse.vy * 10;
+        const pdx = predX - (R.x + CHAR_W/2);
+        const pdy = predY - (R.y + CHAR_H/2);
+        const predDist = Math.sqrt(pdx*pdx + pdy*pdy);
+        const effectiveDist = Math.min(dist, predDist);
 
-        const effectiveDist = Math.min(dist, predictDist);
+        if (effectiveDist < R.awareness) {
+            R.panicLevel = Math.min(1, R.panicLevel + 0.04);
+            R.state = 'flee';
 
-        if (effectiveDist < raanman.awareness) {
-            raanman.panicLevel = Math.min(1, raanman.panicLevel + 0.05);
-            raanman.state = 'flee';
+            // Flee direction
+            const fleeX = (mouse.x + predX) / 2;
+            const fleeDx = R.x - fleeX;
+            const fleeLen = Math.abs(fleeDx) || 1;
+            const panic = 1 + R.panicLevel * 2;
+            R.vx += (fleeDx / fleeLen) * R.fleeSpeed * 0.15 * panic;
 
-            // Run AWAY from mouse (and predicted position)
-            const fleeFromX = (mouse.x + predictX) / 2;
-            const fleeFromY = (mouse.y + predictY) / 2;
-            const fleeDx = raanman.x - fleeFromX;
-            const fleeDy = raanman.y - fleeFromY;
-            const fleeLen = Math.sqrt(fleeDx * fleeDx + fleeDy * fleeDy) || 1;
+            // Jump away if close + mouse is fast
+            const mouseSpd = Math.sqrt(mouse.vx*mouse.vx + mouse.vy*mouse.vy);
+            if (effectiveDist < 100 && R.grounded && mouseSpd > 3) {
+                R.vy = -14 - Math.random() * 4;
+                R.grounded = false;
+                R.squash = 1.3; R.stretch = 0.7;
+                for (let i = 0; i < 5; i++) spawnParticle(R.x + CHAR_W/2, R.y + CHAR_H, 'dollar');
+            }
 
-            const panic = 1 + raanman.panicLevel * 2;
-            raanman.vx += (fleeDx / fleeLen) * raanman.fleeSpeed * 0.15 * panic;
-
-            // Jump if mouse is close and approaching fast
-            const mouseSpeed = Math.sqrt(mouse.vx * mouse.vx + mouse.vy * mouse.vy);
-            if (effectiveDist < 80 && raanman.grounded && mouseSpeed > 5) {
-                raanman.jumpVy = -12 - Math.random() * 4;
-                raanman.grounded = false;
-
-                // Dollar particles on panic jump
-                for (let i = 0; i < 5; i++) {
-                    spawnParticle(
-                        raanman.x + SPRITE_W * SPRITE_SCALE / 2,
-                        raanman.y + SPRITE_H * SPRITE_SCALE,
-                        'dollar'
-                    );
+            // Also try jumping to higher platform to escape
+            if (effectiveDist < 120 && R.grounded && Math.random() < 0.03) {
+                const target = findNearbyPlatform();
+                if (target && target.y < R.y) {
+                    R.vy = -12 - Math.random() * 3;
+                    R.grounded = false;
+                    R.vx += (target.x + target.w/2 > R.x ? 3 : -3);
                 }
             }
 
-            // Scared face when very close
-            if (effectiveDist < 60 && raanman.speechTimer <= 0) {
-                const scaredLines = [
-                    "AAHH!! TOO CLOSE!",
-                    "nononono not again!",
-                    "I HAVE A FIREWALL!",
-                    "MY PERSONAL SPACE!",
-                    "CURSOR DETECTED!!",
-                    "EXCEPTION THROWN!",
-                ];
-                showSpeech(scaredLines[Math.floor(Math.random() * scaredLines.length)], 60);
+            // Scared speech
+            if (effectiveDist < 60 && R.speechTimer <= 0) {
+                showSpeech(["AAHH!! TOO CLOSE!","nononono not again!",
+                    "I HAVE A FIREWALL!","MY PERSONAL SPACE!",
+                    "CURSOR DETECTED!!","EXCEPTION THROWN!",
+                    "*screams in JavaScript*"][Math.floor(Math.random()*7)], 80);
             }
         } else {
-            raanman.panicLevel = Math.max(0, raanman.panicLevel - 0.01);
-            if (raanman.state === 'flee') {
-                raanman.state = 'wander';
-                raanman.wanderTimer = 120 + Math.random() * 180;
+            R.panicLevel = Math.max(0, R.panicLevel - 0.01);
+            if (R.state === 'flee') {
+                R.state = 'wander';
+                R.wanderTimer = 100 + Math.random() * 200;
             }
         }
     } else {
-        raanman.panicLevel = Math.max(0, raanman.panicLevel - 0.02);
+        R.panicLevel = Math.max(0, R.panicLevel - 0.02);
     }
 
-    // ---- WANDER / IDLE ----
-    if (raanman.state === 'idle') {
-        raanman.idleTimer--;
-        raanman.vx *= 0.85;
+    // ---- IDLE ----
+    if (R.state === 'idle') {
+        R.idleTimer--;
+        R.vx *= 0.85;
 
-        // Idle animations
-        raanman.idleAnimTimer++;
-
-        // Speak one-liner occasionally while idle
-        if (raanman.idleAnimTimer % 300 === 0 && raanman.speechTimer <= 0) {
-            showSpeech(ONELINERS[Math.floor(Math.random() * ONELINERS.length)], 250);
-        }
-
-        if (raanman.idleTimer <= 0) {
-            // Choose next action
+        if (R.idleTimer <= 0) {
             const roll = Math.random();
-            if (roll < 0.6) {
-                raanman.state = 'wander';
-                raanman.wanderTimer = 120 + Math.random() * 240;
-                raanman.wanderAngle = (Math.random() - 0.5) * 2;
-            } else if (roll < 0.8) {
+            if (roll < 0.35) {
+                R.state = 'wander';
+                R.wanderTimer = 100 + Math.random() * 250;
+                R.wanderDir = Math.random() > 0.5 ? 1 : -1;
+            } else if (roll < 0.6) {
+                // Jump to a platform
+                const target = findNearbyPlatform();
+                if (target && R.grounded) {
+                    const jumpH = R.y + CHAR_H - target.y;
+                    R.vy = -Math.min(16, Math.max(8, Math.sqrt(jumpH * 1.2) + 2));
+                    R.grounded = false;
+                    R.squash = 1.3; R.stretch = 0.7;
+                    R.vx = ((target.x + target.w/2) - (R.x + CHAR_W/2)) * 0.04;
+                    R.state = 'wander';
+                    R.wanderTimer = 80;
+                } else {
+                    R.state = 'wander';
+                    R.wanderTimer = 120;
+                    R.wanderDir = Math.random() > 0.5 ? 1 : -1;
+                }
+            } else if (roll < 0.78) {
                 // Random jump
-                if (raanman.grounded) {
-                    raanman.jumpVy = -8 - Math.random() * 4;
-                    raanman.grounded = false;
-                    raanman.state = 'wander';
-                    raanman.wanderTimer = 60;
+                if (R.grounded) {
+                    R.vy = -9 - Math.random() * 5;
+                    R.grounded = false;
+                    R.squash = 1.2; R.stretch = 0.8;
+                    R.state = 'wander';
+                    R.wanderTimer = 60;
+                    R.wanderDir = Math.random() > 0.5 ? 1 : -1;
                 }
             } else {
-                raanman.state = 'sleep';
-                raanman.sleepTimer = 300 + Math.random() * 400;
-                showSpeech("*yawn* deploying to dreamland...", 120);
+                R.state = 'sleep';
+                R.sleepTimer = 400 + Math.random() * 500;
+                showSpeech("*yawn*\ndigital pets need\ndigital naps...");
             }
         }
     }
 
-    if (raanman.state === 'wander') {
-        raanman.wanderTimer--;
-        raanman.vx += raanman.wanderAngle * 0.3;
-        raanman.vx = Math.max(-raanman.maxSpeed, Math.min(raanman.maxSpeed, raanman.vx));
-
-        if (raanman.wanderTimer <= 0) {
-            raanman.state = 'idle';
-            raanman.idleTimer = 60 + Math.random() * 120;
+    // ---- WANDER ----
+    if (R.state === 'wander') {
+        R.wanderTimer--;
+        R.vx += R.wanderDir * 0.3;
+        R.vx = Math.max(-R.maxSpeed, Math.min(R.maxSpeed, R.vx));
+        if (R.wanderTimer <= 0) {
+            R.state = 'idle';
+            R.idleTimer = 60 + Math.random() * 150;
         }
     }
 
     // ---- PHYSICS ----
-    // Friction
-    if (raanman.state !== 'flee') {
-        raanman.vx *= 0.92;
-    } else {
-        raanman.vx *= 0.95;
-    }
-
-    // Speed cap
-    const maxSpd = raanman.state === 'flee' ? raanman.fleeSpeed * (1 + raanman.panicLevel) : raanman.maxSpeed;
-    raanman.vx = Math.max(-maxSpd, Math.min(maxSpd, raanman.vx));
+    R.vx *= (R.state === 'flee') ? 0.94 : 0.91;
+    const maxSpd = R.state === 'flee' ? R.fleeSpeed * (1 + R.panicLevel) : R.maxSpeed;
+    R.vx = Math.max(-maxSpd, Math.min(maxSpd, R.vx));
 
     // Gravity
-    if (!raanman.grounded) {
-        raanman.jumpVy += 0.6;
-        raanman.y += raanman.jumpVy;
+    if (!R.grounded) {
+        R.vy += 0.55;
+        R.y += R.vy;
+    }
 
-        if (raanman.y >= raanman.groundY) {
-            raanman.y = raanman.groundY;
-            raanman.grounded = true;
-            raanman.jumpVy = 0;
-
-            // Landing dust
-            for (let i = 0; i < 6; i++) {
-                spawnParticle(
-                    raanman.x + SPRITE_W * SPRITE_SCALE / 2 + (Math.random() - 0.5) * 20,
-                    raanman.y + SPRITE_H * SPRITE_SCALE,
-                    'dust'
-                );
+    // Platform collision
+    if (R.vy >= 0) {
+        const plat = findPlatformBelow(R.x + 4, R.y);
+        if (plat && R.y + CHAR_H >= plat.y && R.y + CHAR_H <= plat.y + 20) {
+            R.y = plat.y - CHAR_H;
+            R.vy = 0;
+            if (!R.grounded) {
+                R.squash = 0.7; R.stretch = 1.3;
+                for (let i = 0; i < 4; i++) spawnParticle(R.x + CHAR_W/2 + (Math.random()-0.5)*15, R.y + CHAR_H, 'dust');
+            }
+            R.grounded = true;
+            R.currentPlatform = plat;
+        } else if (R.grounded && R.currentPlatform) {
+            // Check if still on platform
+            const p = R.currentPlatform;
+            if (R.x + CHAR_W < p.x + 2 || R.x > p.x + p.w - 2) {
+                R.grounded = false;
+                R.currentPlatform = null;
             }
         }
+    } else {
+        R.grounded = false;
+        R.currentPlatform = null;
+    }
+
+    // Fallback: don't fall below ground
+    const ground = platforms.find(p => p.type === 'ground');
+    if (ground && R.y + CHAR_H > ground.y) {
+        R.y = ground.y - CHAR_H;
+        R.vy = 0;
+        if (!R.grounded) {
+            R.squash = 0.7; R.stretch = 1.3;
+            for (let i = 0; i < 4; i++) spawnParticle(R.x + CHAR_W/2 + (Math.random()-0.5)*15, R.y + CHAR_H, 'dust');
+        }
+        R.grounded = true;
+        R.currentPlatform = ground;
     }
 
     // Move
-    raanman.x += raanman.vx;
+    R.x += R.vx;
+    if (Math.abs(R.vx) > 0.5) R.facing = R.vx > 0 ? 1 : -1;
 
-    // Facing direction
-    if (Math.abs(raanman.vx) > 0.5) {
-        raanman.facing = raanman.vx > 0 ? 1 : -1;
-    }
+    // Wrap screen
+    if (R.x < -CHAR_W - 10) R.x = canvas.width + 5;
+    if (R.x > canvas.width + 10) R.x = -CHAR_W - 5;
 
-    // Screen boundaries - wrap around
-    const sw = SPRITE_W * SPRITE_SCALE;
-    if (raanman.x < -sw) raanman.x = canvas.width;
-    if (raanman.x > canvas.width) raanman.x = -sw;
-
-    // Animation
-    raanman.frameTimer++;
-    const animSpd = raanman.state === 'flee' ? 4 : (Math.abs(raanman.vx) > 0.5 ? 8 : 20);
-    if (raanman.frameTimer >= animSpd) {
-        raanman.frame = (raanman.frame + 1) % 2;
-        raanman.frameTimer = 0;
+    // Animation frame
+    R.frameTimer++;
+    if (R.frameTimer >= (R.state === 'flee' ? 3 : 8)) {
+        R.frame = (R.frame + 1) % 2;
+        R.frameTimer = 0;
     }
 }
 
@@ -1167,211 +994,152 @@ function updateRaanman(time) {
 // DRAW RAANMAN
 // ============================================
 function drawRaanman(time) {
-    // Determine sprite
-    let spriteName = 'idle';
-    if (raanman.state === 'caught') {
-        spriteName = 'caught';
-    } else if (raanman.state === 'sleep') {
-        spriteName = 'sleep';
-    } else if (!raanman.grounded) {
-        spriteName = 'jump';
-    } else if (raanman.state === 'flee' && raanman.panicLevel > 0.5) {
-        spriteName = 'scared';
-    } else if (Math.abs(raanman.vx) > 0.5) {
-        spriteName = raanman.frame === 0 ? 'walk1' : 'walk2';
-    }
-
-    const sprites = raanman.facing === 1 ? spriteCanvases : spriteCanvasesFlipped;
-    const sprite = sprites[spriteName];
-    if (!sprite) return;
-
     ctx.save();
 
-    // Green glow around raanman
+    // Glow
     const baseGlow = 15 + Math.sin(time * 0.003) * 5;
-    const glowSize = raanman.state === 'caught' ? raanman.glowRadius : baseGlow;
-    const cx = raanman.x + SPRITE_W * SPRITE_SCALE / 2;
-    const cy = raanman.y + SPRITE_H * SPRITE_SCALE / 2;
-
-    const gGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowSize);
-    if (raanman.state === 'caught') {
-        gGrad.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
-        gGrad.addColorStop(0.5, 'rgba(0, 255, 200, 0.08)');
-        gGrad.addColorStop(1, 'transparent');
+    const glowSize = R.state === 'caught' ? R.glowRadius : baseGlow;
+    const cx = R.x + CHAR_W/2, cy = R.y + CHAR_H/2;
+    const gg = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowSize);
+    if (R.state === 'caught') {
+        gg.addColorStop(0, 'rgba(255,255,255,0.15)');
+        gg.addColorStop(0.5, 'rgba(0,255,200,0.08)');
+        gg.addColorStop(1, 'transparent');
     } else {
-        gGrad.addColorStop(0, 'rgba(0, 255, 136, 0.08)');
-        gGrad.addColorStop(1, 'transparent');
+        gg.addColorStop(0, 'rgba(0,255,136,0.07)');
+        gg.addColorStop(1, 'transparent');
     }
-    ctx.fillStyle = gGrad;
+    ctx.fillStyle = gg;
     ctx.fillRect(cx - glowSize, cy - glowSize, glowSize * 2, glowSize * 2);
 
-    // Squash and stretch
-    let scaleX = 1;
-    let scaleY = 1;
-    if (!raanman.grounded) {
-        if (raanman.jumpVy < 0) { scaleX = 0.9; scaleY = 1.15; }
-        else { scaleX = 1.1; scaleY = 0.9; }
+    // Shadow
+    const ground = platforms.find(p => p.type === 'ground');
+    if (ground) {
+        const shadowY = R.currentPlatform ? R.currentPlatform.y : ground.y;
+        const jumpH = shadowY - (R.y + CHAR_H);
+        const shadowScale = Math.max(0.3, 1 - jumpH / 200);
+        ctx.fillStyle = `rgba(0,0,0,${0.25 * shadowScale})`;
+        ctx.beginPath();
+        ctx.ellipse(R.x + CHAR_W/2, shadowY, CHAR_W * 0.5 * shadowScale, 3 * shadowScale, 0, 0, Math.PI * 2);
+        ctx.fill();
     }
 
     // Panic shake
-    let shakeX = 0, shakeY = 0;
-    if (raanman.panicLevel > 0.5) {
-        shakeX = (Math.random() - 0.5) * raanman.panicLevel * 4;
-        shakeY = (Math.random() - 0.5) * raanman.panicLevel * 2;
+    let sx = 0, sy = 0;
+    if (R.panicLevel > 0.5) {
+        sx = (Math.random() - 0.5) * R.panicLevel * 4;
+        sy = (Math.random() - 0.5) * R.panicLevel * 2;
     }
 
-    // Bobbing while idle
+    // Idle bob
     let bobY = 0;
-    if (raanman.state === 'idle' && raanman.grounded) {
-        bobY = Math.sin(time * 0.004) * 2;
-    }
+    if (R.state === 'idle' && R.grounded) bobY = Math.sin(time * 0.004) * 2;
 
-    // Draw sprite
-    ctx.translate(
-        raanman.x + SPRITE_W * SPRITE_SCALE / 2 + shakeX,
-        raanman.y + SPRITE_H * SPRITE_SCALE / 2 + bobY + shakeY
-    );
-    ctx.scale(scaleX, scaleY);
-    ctx.drawImage(
-        sprite,
-        -SPRITE_W * SPRITE_SCALE / 2,
-        -SPRITE_H * SPRITE_SCALE / 2,
-        SPRITE_W * SPRITE_SCALE,
-        SPRITE_H * SPRITE_SCALE
-    );
+    // Draw the body
+    drawRaanmanBody(R.x + sx, R.y + bobY + sy, R.squash, R.stretch, R.facing);
 
-    ctx.restore();
-
-    // Sweat drops when fleeing
-    if (raanman.state === 'flee' && raanman.panicLevel > 0.3 && time % 200 < 100) {
-        ctx.fillStyle = `rgba(100, 180, 255, ${raanman.panicLevel})`;
+    // Sweat when fleeing
+    if (R.state === 'flee' && R.panicLevel > 0.3 && Math.floor(time / 200) % 2 === 0) {
+        ctx.fillStyle = `rgba(100,180,255,${R.panicLevel})`;
         ctx.beginPath();
-        ctx.arc(
-            raanman.x + (raanman.facing === 1 ? SPRITE_W * SPRITE_SCALE + 4 : -4),
-            raanman.y + 10 + Math.sin(time * 0.01) * 3,
-            3, 0, Math.PI * 2
-        );
+        const sweatX = R.x + (R.facing === 1 ? CHAR_W + 4 : -4);
+        ctx.arc(sweatX, R.y + 12 + Math.sin(time * 0.01) * 3, 3, 0, Math.PI * 2);
         ctx.fill();
     }
+
+    ctx.restore();
 }
 
 // ============================================
 // HUD
 // ============================================
 function drawHUD(time) {
-    // Name tag
     ctx.save();
-    ctx.font = '11px "Courier New", monospace';
-    ctx.fillStyle = `rgba(0, 255, 136, ${raanman.state === 'sleep' ? 0.3 : 0.6})`;
+    ctx.font = '11px "Courier New",monospace';
+    ctx.fillStyle = `rgba(0,255,136,${R.state === 'sleep' ? 0.2 : 0.5})`;
     ctx.textAlign = 'center';
-    ctx.fillText(
-        'ASMRaanman',
-        raanman.x + SPRITE_W * SPRITE_SCALE / 2,
-        raanman.y - 8
-    );
+    ctx.fillText('ASMRaanman', R.x + CHAR_W/2, R.y - 8);
 
-    // Catch counter (top right)
     ctx.textAlign = 'right';
-    ctx.font = '12px "Courier New", monospace';
-    ctx.fillStyle = 'rgba(0, 255, 136, 0.3)';
-    ctx.fillText(`catches: ${raanman.caughtCount}`, canvas.width - 15, 25);
+    ctx.font = '12px "Courier New",monospace';
+    ctx.fillStyle = 'rgba(0,255,136,0.25)';
+    ctx.fillText(`catches: ${R.caughtCount}`, canvas.width - 15, 25);
 
-    // State indicator (bottom left, very subtle)
     ctx.textAlign = 'left';
-    ctx.fillStyle = 'rgba(0, 255, 136, 0.15)';
-    ctx.font = '10px "Courier New", monospace';
-    const stateText = raanman.state === 'flee' ? 'EVADING' :
-        raanman.state === 'caught' ? 'ENLIGHTENED' :
-        raanman.state === 'sleep' ? 'ZzZzZ...' :
-        raanman.state === 'wander' ? 'exploring...' : 'vibing';
+    ctx.fillStyle = 'rgba(0,255,136,0.12)';
+    ctx.font = '10px "Courier New",monospace';
+    const stateText = R.state === 'flee' ? 'EVADING' :
+        R.state === 'caught' ? 'ENLIGHTENED' :
+        R.state === 'sleep' ? 'ZzZzZ...' :
+        R.state === 'wander' ? 'exploring...' : 'vibing';
+
+    // Pet mood indicator
+    ctx.fillStyle = 'rgba(0,255,136,0.08)';
+    ctx.font = '9px "Courier New",monospace';
+    const mood = R.panicLevel > 0.5 ? 'PANICKED' :
+        R.state === 'caught' ? 'TRANSCENDENT' :
+        R.state === 'sleep' ? 'DREAMING' :
+        R.caughtCount > 5 ? 'TRUSTS YOU' :
+        R.caughtCount > 2 ? 'WARMING UP' : 'SHY';
+    ctx.fillText(`mood: ${mood}`, 15, canvas.height - 30);
     ctx.fillText(`> ${stateText}`, 15, canvas.height - 15);
 
-    // Title watermark (very faint)
     ctx.textAlign = 'center';
-    ctx.font = '10px "Courier New", monospace';
-    ctx.fillStyle = 'rgba(0, 255, 136, 0.08)';
-    ctx.fillText('ASMRaanman // raanman.lol', canvas.width / 2, canvas.height - 10);
-
+    ctx.fillStyle = 'rgba(0,255,136,0.06)';
+    ctx.fillText('ASMRaanman // your digital pet // raanman.lol', canvas.width / 2, canvas.height - 10);
     ctx.restore();
 }
 
 // ============================================
 // MAIN LOOP
 // ============================================
-let frameCount = 0;
 let ambientSpawnTimer = 0;
 
 function loop(timestamp) {
-    frameCount++;
+    if (performance.now() - lastMouseMove > 5000) mouse.active = false;
 
-    // Check if mouse is inactive for a while -> raanman calms down
-    if (performance.now() - lastMouseMove > 5000) {
-        mouse.active = false;
-    }
-
-    // Clear and draw background
     drawBackground(timestamp);
-
-    // Ambient floating text
     ambientSpawnTimer++;
     if (ambientSpawnTimer % 120 === 0) spawnAmbientText();
     updateAmbientTexts();
     drawAmbientTexts();
 
-    // Floor
-    drawFloor(timestamp);
-
-    // Update and draw particles
+    drawPlatforms(timestamp);
     updateParticles();
     drawParticles();
 
-    // Update and draw Raanman
     updateRaanman(timestamp);
     drawRaanman(timestamp);
     drawSpeechBubble();
-
-    // Universe reveal effect
     drawUniverseReveal(timestamp);
-
-    // HUD
     drawHUD(timestamp);
-
-    // Cursor
     drawCursor(timestamp);
 
     requestAnimationFrame(loop);
 }
 
-// ============================================
-// INIT
-// ============================================
-// Place raanman at center-bottom
-raanman.x = canvas.width / 2 - SPRITE_W * SPRITE_SCALE / 2;
-raanman.y = raanman.groundY;
+// Init
+R.groundY = canvas.height - 40;
+R.x = canvas.width / 2 - CHAR_W / 2;
+R.y = R.groundY - CHAR_H;
+generatePlatforms();
 
-// Start with intro speech
-setTimeout(() => {
-    showSpeech("*stretches* ...oh, hi.\nI live here now.", 250);
-}, 1000);
+setTimeout(() => showSpeech("*adjusts tiny sunglasses*\n...oh, hi.\nI'm your digital pet now.\nPlease feed me commits."), 1000);
 
-// Periodic one-liners when idle (if no speech is active)
 setInterval(() => {
-    if (raanman.state !== 'caught' && raanman.state !== 'sleep' && raanman.speechTimer <= 0) {
-        if (Math.random() < 0.3) {
-            showSpeech(ONELINERS[Math.floor(Math.random() * ONELINERS.length)], 250);
-        }
+    if (R.state !== 'caught' && R.state !== 'sleep' && R.speechTimer <= 0 && Math.random() < 0.3) {
+        showSpeech(ONELINERS[Math.floor(Math.random() * ONELINERS.length)]);
     }
-}, 8000);
+}, 10000);
 
-requestAnimationFrame(loop);
-
-// Resize handler
 window.addEventListener('resize', () => {
     resize();
     initBgStars();
-    raanman.groundY = canvas.height - 80;
-    if (raanman.y > raanman.groundY) raanman.y = raanman.groundY;
+    R.groundY = canvas.height - 40;
+    if (R.y + CHAR_H > R.groundY) R.y = R.groundY - CHAR_H;
 });
+
+requestAnimationFrame(loop);
 </script>
 </body>
 </html>
