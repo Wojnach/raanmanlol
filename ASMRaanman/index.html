@@ -35,7 +35,6 @@ function resize() {
     generatePlatforms();
 }
 resize();
-window.addEventListener('resize', resize);
 
 // ============================================
 // PLATFORM SYSTEM
@@ -363,6 +362,439 @@ const CAUGHT_REVELATIONS = [
 ];
 
 // ============================================
+// SECRET BUILD SYSTEM
+// Raanman finds materials scattered on screen,
+// picks them up, carries them to a build site,
+// and assembles blueprints block by block.
+// Push your cursor into it to destroy it!
+// ============================================
+
+// --- BLUEPRINTS: each is a grid of blocks Raanman builds ---
+// Blocks are [col, row, color, label] - row 0 = ground level, builds up
+const BLUEPRINTS = [
+    {
+        name: 'a rocket ship',
+        icon: '🚀',
+        buildLines: ["*placing fuel tanks*","Thrust-to-weight ratio\ncalculations...", "Elon wishes he had\nthis design", "T-minus... a lot"],
+        blocks: [
+            [0,0,'#555',''], [2,0,'#555',''],                   // base legs
+            [1,0,'#3a4a5a',''], [1,1,'#3a4a5a',''],             // body
+            [0,1,'#3a4a5a',''], [2,1,'#3a4a5a',''],             // body
+            [0,2,'#445566','fn'], [1,2,'#445566',''], [2,2,'#445566','fn'], // mid
+            [1,3,'#556677',''], [0,3,'#556677',''], [2,3,'#556677',''],     // upper
+            [1,4,'#667788','01'], [0,4,'#556677',''], [2,4,'#556677',''],   // top
+            [1,5,'#ff4422',''],                                 // nose cone
+        ],
+    },
+    {
+        name: 'a house',
+        icon: '🏠',
+        buildLines: ["*laying foundation*","Load-bearing walls\nare important", "This will pass\ncode review... right?", "Open floor plan!"],
+        blocks: [
+            [0,0,'#664422',''], [1,0,'#664422',''], [2,0,'#664422',''], [3,0,'#664422',''],  // floor
+            [0,1,'#775533',''], [3,1,'#775533',''],              // walls
+            [0,2,'#775533','{}'], [3,2,'#775533','{}'],          // walls
+            [0,3,'#886644',''], [1,3,'#886644',''], [2,3,'#886644',''], [3,3,'#886644',''],  // ceiling
+            [1,1,'#4488cc',''],                                  // window
+            [2,1,'#553311',''],                                  // door
+            [1,4,'#aa3322',''], [2,4,'#aa3322',''],              // roof
+            [1.5,5,'#cc4433',''],                                // chimney
+        ],
+    },
+    {
+        name: 'a robot',
+        icon: '🤖',
+        buildLines: ["*wiring neural nets*","import robot_brain","This one will\npass the Turing test", "BEEP BOOP\nin progress..."],
+        blocks: [
+            [0,0,'#444',''], [2,0,'#444',''],                    // feet
+            [0,1,'#555','fn'], [2,1,'#555','fn'],                // legs
+            [0,2,'#3a5a7a',''], [1,2,'#3a5a7a','01'], [2,2,'#3a5a7a',''],  // body
+            [0,3,'#3a5a7a','{}'], [1,3,'#4a6a8a',''], [2,3,'#3a5a7a','{}'],// chest
+            [-0.5,3,'#555',''], [2.5,3,'#555',''],               // arms
+            [0,4,'#6a8aaa',''], [1,4,'#6a8aaa',''], [2,4,'#6a8aaa',''],    // head
+            [0.5,5,'#ff3333',''], [1.5,5,'#ff3333',''],          // eyes/antenna
+        ],
+    },
+    {
+        name: 'a Blender donut',
+        icon: '🍩',
+        buildLines: ["*subdivide... subdivide...*","The topology must be\nperfect...","Still on the donut\ntutorial...", "47th attempt.\nThis time for sure."],
+        blocks: [
+            [1,0,'#cc8844',''], [2,0,'#cc8844',''],              // bottom
+            [0,1,'#dd9955',''], [3,1,'#dd9955',''],              // sides
+            [0,2,'#dd9955',''], [3,2,'#dd9955',''],              // sides
+            [1,2,'#ffaacc',''], [2,2,'#ffaacc',''],              // icing
+            [0,3,'#ffbbdd',''], [3,3,'#ffbbdd',''],              // icing top
+            [1,3,'#ffccee',''], [2,3,'#ffccee',''],              // icing drip
+        ],
+    },
+    {
+        name: 'an Unreal level',
+        icon: '🎮',
+        buildLines: ["*placing BSP brushes*","Nanite can handle this\n...right?", "Need more\npoint lights...", "This runs at 4fps.\nShip it."],
+        blocks: [
+            [0,0,'#2a4a2a',''], [1,0,'#2a4a2a',''], [2,0,'#2a4a2a',''], [3,0,'#2a4a2a',''], [4,0,'#2a4a2a',''], // ground
+            [0,1,'#3a3a4a','{}'], [4,1,'#3a3a4a','{}'],          // pillars
+            [0,2,'#3a3a4a',''], [4,2,'#3a3a4a',''],              // pillars
+            [0,3,'#4a4a5a',''], [1,3,'#4a4a5a',''], [2,3,'#4a4a5a','fn'], [3,3,'#4a4a5a',''], [4,3,'#4a4a5a',''], // roof
+            [2,1,'#5577aa','01'],                                 // pickup
+            [2,4,'#ffaa22',''],                                   // light
+        ],
+    },
+    {
+        name: 'a neural network',
+        icon: '🧠',
+        buildLines: ["Layer 1... layer 2...","The loss function is\nmy emotional state.", "Adjusting weights\nnervously...", "Training epoch 47..."],
+        blocks: [
+            [1,0,'#4a2a6a','01'], [3,0,'#4a2a6a','01'],          // input nodes
+            [0,1,'#5a3a7a','fn'], [2,1,'#5a3a7a','fn'], [4,1,'#5a3a7a','fn'], // hidden layer
+            [1,2,'#6a4a8a','{}'], [3,2,'#6a4a8a','{}'],          // hidden 2
+            [0,3,'#7a5a9a',''], [2,3,'#7a5a9a',''], [4,3,'#7a5a9a',''],    // hidden 3
+            [2,4,'#ff6644','01'],                                 // output
+        ],
+    },
+    {
+        name: 'his magnum opus',
+        icon: '✨',
+        buildLines: ["This is THE ONE.","Years of experience\nled to this moment.", "*places block with\nsurgical precision*", "The world\nis not ready."],
+        blocks: [
+            [0,0,'#444',''], [1,0,'#444',''], [2,0,'#444',''], [3,0,'#444',''], [4,0,'#444',''],   // base
+            [0,1,'#555','{}'], [4,1,'#555','{}'],                  // pillars
+            [0,2,'#555',''], [4,2,'#555',''],                      // pillars
+            [0,3,'#666','fn'], [1,3,'#666',''], [2,3,'#666','01'], [3,3,'#666',''], [4,3,'#666','fn'], // mid
+            [1,4,'#777',''], [2,4,'#888',''], [3,4,'#777',''],    // narrow
+            [2,5,'#aaa',''],                                       // tip
+            [2,6,'#ffcc00',''],                                    // golden crown
+        ],
+    },
+];
+
+const BUILD_DESTROY_REACTIONS = [
+    "NO!! My {project}!!",
+    "*stares in horror*\nThat took me\nFOREVER...",
+    "WHY WOULD YOU\nDO THAT?!",
+    "I was ALMOST done!\n...almost.",
+    "Do you know how many\nvertices that was?!",
+    "*quietly sobs\nin Blender*",
+    "That was going to be\nmy portfolio piece...",
+    "The commit was\nSO CLOSE...",
+    "I'm adding you to\nmy .gitignore",
+    "My {project}...\n*whispers*\n...it's gone.",
+    "Fine. I'll just\nmake another one.\n*internally screaming*",
+    "That was 12 hours\nof work.\n12. HOURS.",
+];
+
+// --- BUILD STATE ---
+const buildBlocks = [];          // placed blocks in the world
+const scatteredMaterials = [];   // materials scattered around screen
+const MAX_SCATTERED = 8;
+
+let currentBlueprint = null;
+let buildSiteX = 0;             // where we're building
+let buildStepIndex = 0;         // which block in the blueprint we're on
+let buildCooldown = 0;
+let lastBlockDestroyedTime = 0;
+let destroyReactionCooldown = 0;
+const BLOCK_SIZE = 14;          // base unit for grid
+
+function getGroundY() {
+    const ground = platforms.find(p => p.type === 'ground');
+    return ground ? ground.y : canvas.height - 40;
+}
+
+// Scatter materials around the screen for Raanman to find
+function scatterMaterials() {
+    while (scatteredMaterials.length < MAX_SCATTERED) {
+        const groundY = getGroundY();
+        // Place on platforms or on the ground
+        const plats = platforms.filter(p => p.type !== 'ground' && p.w > 30);
+        let mx, my;
+        if (plats.length > 0 && Math.random() < 0.5) {
+            const p = plats[Math.floor(Math.random() * plats.length)];
+            mx = p.x + 10 + Math.random() * (p.w - 20);
+            my = p.y - 12;
+        } else {
+            mx = 40 + Math.random() * (canvas.width - 80);
+            my = groundY - 12;
+        }
+        scatteredMaterials.push({
+            x: mx, y: my,
+            w: 10 + Math.random() * 8,
+            h: 8 + Math.random() * 6,
+            color: ['#3a4a5a','#4a3a5a','#5a4a3a','#3a5a4a','#555','#4a4a5a','#5a3a3a'][Math.floor(Math.random()*7)],
+            label: ['','','01','fn','{}','',''][Math.floor(Math.random()*7)],
+            bobPhase: Math.random() * Math.PI * 2,
+            alpha: 0,
+            sparkle: Math.random() * 100,
+        });
+    }
+}
+
+function startBuildProject() {
+    const idx = Math.floor(Math.random() * BLUEPRINTS.length);
+    currentBlueprint = BLUEPRINTS[idx];
+    buildStepIndex = 0;
+
+    // Pick a build site: somewhere on the ground, not too close to edges
+    const groundY = getGroundY();
+    buildSiteX = 100 + Math.random() * (canvas.width - 200);
+
+    // Clear old placed blocks
+    buildBlocks.length = 0;
+
+    // Scatter fresh materials
+    scatterMaterials();
+}
+
+function findNearestMaterial() {
+    let best = null, bestDist = Infinity;
+    scatteredMaterials.forEach(m => {
+        const dx = m.x - R.x;
+        const dy = m.y - R.y;
+        const d = Math.sqrt(dx*dx + dy*dy);
+        if (d < bestDist) { bestDist = d; best = m; }
+    });
+    return best;
+}
+
+function placeNextBuildBlock() {
+    if (!currentBlueprint || buildStepIndex >= currentBlueprint.blocks.length) return false;
+
+    const bp = currentBlueprint.blocks[buildStepIndex];
+    const groundY = getGroundY();
+    const col = bp[0], row = bp[1], color = bp[2], label = bp[3];
+
+    const block = {
+        x: buildSiteX + col * (BLOCK_SIZE + 1),
+        y: groundY - (row + 1) * (BLOCK_SIZE - 2),
+        w: BLOCK_SIZE,
+        h: BLOCK_SIZE - 2,
+        color: color,
+        label: label,
+        vx: 0, vy: 0,
+        rotation: 0,
+        vr: 0,
+        loose: false,
+        alpha: 0,
+        glow: 1,
+    };
+
+    buildBlocks.push(block);
+    buildStepIndex++;
+
+    for (let i = 0; i < 4; i++) spawnParticle(block.x + block.w/2, block.y + block.h, 'dust');
+    spawnParticle(block.x + block.w/2, block.y, 'glow');
+
+    return buildStepIndex < currentBlueprint.blocks.length;
+}
+
+function updateBuildBlocks() {
+    const groundY = getGroundY();
+
+    // Update scattered materials
+    scatteredMaterials.forEach(m => {
+        m.alpha = Math.min(1, m.alpha + 0.02);
+        m.sparkle++;
+    });
+
+    // Update placed blocks
+    for (let i = buildBlocks.length - 1; i >= 0; i--) {
+        const b = buildBlocks[i];
+        b.alpha = Math.min(1, b.alpha + 0.05);
+        b.glow = Math.max(0, b.glow - 0.015);
+
+        // Mouse cursor pushes blocks!
+        if (mouse.active) {
+            const bcx = b.x + b.w / 2;
+            const bcy = b.y + b.h / 2;
+            const dx = bcx - mouse.x;
+            const dy = bcy - mouse.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const mouseSpeed = Math.sqrt(mouse.vx * mouse.vx + mouse.vy * mouse.vy);
+
+            if (dist < 45 && mouseSpeed > 2) {
+                const force = (1 - dist / 45) * mouseSpeed * 0.35;
+                b.vx += (dx / (dist || 1)) * force;
+                b.vy += (dy / (dist || 1)) * force * 0.5 - 1.5;
+                b.vr += (Math.random() - 0.5) * force * 0.12;
+                if (!b.loose) {
+                    b.loose = true;
+                    lastBlockDestroyedTime = performance.now();
+                    spawnParticle(bcx, bcy, 'star');
+                    spawnParticle(bcx, bcy, 'star');
+                }
+            }
+        }
+
+        // Physics for loose blocks
+        if (b.loose) {
+            b.vy += 0.45;
+            b.x += b.vx; b.y += b.vy;
+            b.rotation += b.vr;
+            b.vx *= 0.97; b.vr *= 0.96;
+
+            // Loose blocks push other loose blocks
+            for (let j = 0; j < buildBlocks.length; j++) {
+                if (j === i) continue;
+                const o = buildBlocks[j];
+                const odx = (o.x + o.w/2) - (b.x + b.w/2);
+                const ody = (o.y + o.h/2) - (b.y + b.h/2);
+                const od = Math.sqrt(odx*odx + ody*ody);
+                if (od < BLOCK_SIZE && (Math.abs(b.vx) > 1 || Math.abs(b.vy) > 1)) {
+                    if (!o.loose) {
+                        o.loose = true;
+                        lastBlockDestroyedTime = performance.now();
+                    }
+                    o.vx += (odx / (od||1)) * 1.5;
+                    o.vy += (ody / (od||1)) * 0.8 - 1;
+                    o.vr += (Math.random() - 0.5) * 0.15;
+                }
+            }
+
+            if (b.y + b.h > groundY) {
+                b.y = groundY - b.h;
+                b.vy *= -0.25;
+                b.vr *= 0.4;
+                if (Math.abs(b.vy) < 0.8) { b.vy = 0; b.vx *= 0.85; b.vr *= 0.7; }
+            }
+
+            if (Math.abs(b.vx) < 0.05 && Math.abs(b.vy) < 0.05 && b.y + b.h >= groundY - 2) {
+                b.alpha -= 0.004;
+            }
+
+            if (b.x < -80 || b.x > canvas.width + 80 || b.y > canvas.height + 80) b.alpha = 0;
+            if (b.alpha <= 0) { buildBlocks.splice(i, 1); }
+        }
+    }
+
+    // React to destruction
+    if (destroyReactionCooldown > 0) destroyReactionCooldown--;
+    const looseCount = buildBlocks.filter(b => b.loose).length;
+    if (looseCount >= 2 && performance.now() - lastBlockDestroyedTime < 300 && destroyReactionCooldown <= 0
+        && R.state !== 'caught' && R.speechTimer <= 0) {
+        let reaction = BUILD_DESTROY_REACTIONS[Math.floor(Math.random() * BUILD_DESTROY_REACTIONS.length)];
+        if (currentBlueprint) reaction = reaction.replace('{project}', currentBlueprint.name);
+        showSpeech(reaction, 280);
+        destroyReactionCooldown = 400;
+
+        // If most is destroyed, give up
+        const placed = buildBlocks.filter(b => !b.loose).length;
+        if (placed <= 2 && currentBlueprint) {
+            currentBlueprint = null;
+            buildCooldown = 800;
+            R.state = 'idle';
+            R.idleTimer = 200;
+        }
+    }
+}
+
+function drawScatteredMaterials(time) {
+    scatteredMaterials.forEach(m => {
+        ctx.save();
+        ctx.globalAlpha = m.alpha * 0.8;
+        const bob = Math.sin(time * 0.003 + m.bobPhase) * 2;
+
+        // Block
+        ctx.fillStyle = m.color;
+        ctx.fillRect(m.x, m.y + bob, m.w, m.h);
+        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+        ctx.fillRect(m.x, m.y + bob, m.w, 2);
+
+        // Label
+        if (m.label) {
+            ctx.font = '6px "Courier New",monospace';
+            ctx.fillStyle = 'rgba(0,255,136,0.5)';
+            ctx.textAlign = 'center';
+            ctx.fillText(m.label, m.x + m.w/2, m.y + bob + m.h/2 + 2);
+            ctx.textAlign = 'left';
+        }
+
+        // Sparkle
+        if (Math.floor(m.sparkle / 40) % 2 === 0) {
+            ctx.fillStyle = `rgba(0,255,136,${0.2 + Math.sin(m.sparkle * 0.1) * 0.15})`;
+            ctx.beginPath();
+            ctx.arc(m.x + m.w/2, m.y + bob - 4, 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.restore();
+    });
+}
+
+function drawBuildBlocks(time) {
+    // Draw build site marker if building
+    if (currentBlueprint && buildBlocks.length > 0) {
+        ctx.save();
+        ctx.globalAlpha = 0.08;
+        ctx.strokeStyle = '#00ff88';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        const groundY = getGroundY();
+        const bpWidth = (Math.max(...currentBlueprint.blocks.map(b => b[0])) + 1) * (BLOCK_SIZE + 1) + 10;
+        const bpHeight = (Math.max(...currentBlueprint.blocks.map(b => b[1])) + 2) * (BLOCK_SIZE - 2);
+        ctx.strokeRect(buildSiteX - 5, groundY - bpHeight, bpWidth, bpHeight);
+        ctx.setLineDash([]);
+
+        // Blueprint name
+        ctx.globalAlpha = 0.12;
+        ctx.font = '9px "Courier New",monospace';
+        ctx.fillStyle = '#00ff88';
+        ctx.textAlign = 'center';
+        ctx.fillText(`building: ${currentBlueprint.name}`, buildSiteX + bpWidth/2, groundY - bpHeight - 6);
+        ctx.restore();
+    }
+
+    // Draw blocks
+    buildBlocks.forEach(b => {
+        ctx.save();
+        ctx.globalAlpha = b.alpha;
+
+        if (b.rotation !== 0) {
+            ctx.translate(b.x + b.w/2, b.y + b.h/2);
+            ctx.rotate(b.rotation);
+            ctx.translate(-(b.x + b.w/2), -(b.y + b.h/2));
+        }
+
+        ctx.fillStyle = b.color;
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+        ctx.fillRect(b.x, b.y, b.w, 2);
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.fillRect(b.x, b.y + b.h - 2, b.w, 2);
+
+        if (b.glow > 0) {
+            ctx.strokeStyle = `rgba(0,255,136,${b.glow * 0.5})`;
+            ctx.lineWidth = 1;
+            ctx.strokeRect(b.x - 1, b.y - 1, b.w + 2, b.h + 2);
+        }
+        if (b.label) {
+            ctx.font = '7px "Courier New",monospace';
+            ctx.fillStyle = 'rgba(0,255,136,0.45)';
+            ctx.textAlign = 'center';
+            ctx.fillText(b.label, b.x + b.w/2, b.y + b.h/2 + 3);
+            ctx.textAlign = 'left';
+        }
+
+        ctx.restore();
+    });
+
+    // Carried block
+    if (R.carrying) {
+        ctx.save();
+        ctx.globalAlpha = 0.9;
+        const cx = R.x + CHAR_W/2 - 5;
+        const cy = R.y - 8;
+        ctx.fillStyle = R.carrying.color;
+        ctx.fillRect(cx, cy, 10, 8);
+        ctx.fillStyle = 'rgba(0,255,136,0.3)';
+        ctx.strokeStyle = '#00ff88';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(cx - 1, cy - 1, 12, 10);
+        ctx.restore();
+    }
+}
+
+// ============================================
 // RAANMAN CHARACTER - matches main game look!
 // Bald head, tiny sunglasses, black turtleneck,
 // slight smirk, dark pants, animated legs
@@ -391,6 +823,10 @@ const R = {
     jumpTarget: null, // platform to jump to
     legAnim: 0,
     squash: 1, stretch: 1,
+    buildTimer: 0,
+    buildPlaceTimer: 0,
+    carrying: null,         // material being carried
+    gatherTarget: null,     // material to pick up
 };
 
 // Character size (drawn procedurally like the main game)
@@ -626,6 +1062,10 @@ function catchRaanman() {
     R.caughtCount++;
     R.vx = 0; R.vy = 0;
     R.revelationShown = false;
+    if (R.carrying) { // Drop what you're carrying!
+        scatteredMaterials.push({ x: R.x, y: R.y + CHAR_H - 12, w: 10, h: 8, color: R.carrying.color, label: R.carrying.label || '', bobPhase: Math.random() * Math.PI * 2, alpha: 1, sparkle: 0 });
+        R.carrying = null;
+    }
 
     for (let i = 0; i < 50; i++) spawnParticle(R.x + CHAR_W/2, R.y + CHAR_H/2, 'universe');
     for (let i = 0; i < 15; i++) spawnParticle(R.x + CHAR_W/2, R.y + CHAR_H/2, 'star');
@@ -824,6 +1264,10 @@ function updateRaanman(time) {
         if (effectiveDist < R.awareness) {
             R.panicLevel = Math.min(1, R.panicLevel + 0.04);
             R.state = 'flee';
+            if (R.carrying) { // Drop what you're carrying!
+                scatteredMaterials.push({ x: R.x, y: R.y + CHAR_H - 12, w: 10, h: 8, color: R.carrying.color, label: R.carrying.label || '', bobPhase: Math.random() * Math.PI * 2, alpha: 1, sparkle: 0 });
+                R.carrying = null;
+            }
 
             // Flee direction
             const fleeX = (mouse.x + predX) / 2;
@@ -906,11 +1350,121 @@ function updateRaanman(time) {
                     R.wanderTimer = 60;
                     R.wanderDir = Math.random() > 0.5 ? 1 : -1;
                 }
+            } else if (roll < 0.92) {
+                // Start building!
+                if (!currentBlueprint && buildCooldown <= 0) {
+                    startBuildProject();
+                    R.state = 'gather';
+                    R.buildTimer = 600;
+                    const bp = currentBlueprint;
+                    showSpeech("Time to build\n" + bp.name + "...\n*cracks knuckles*");
+                } else if (currentBlueprint && buildStepIndex < currentBlueprint.blocks.length) {
+                    R.state = 'gather';
+                    R.buildTimer = 400;
+                } else {
+                    R.state = 'wander';
+                    R.wanderTimer = 100;
+                    R.wanderDir = Math.random() > 0.5 ? 1 : -1;
+                }
             } else {
                 R.state = 'sleep';
                 R.sleepTimer = 400 + Math.random() * 500;
                 showSpeech("*yawn*\ndigital pets need\ndigital naps...");
             }
+        }
+    }
+
+    // ---- GATHER: walk to material and pick it up ----
+    if (R.state === 'gather') {
+        R.buildTimer--;
+
+        // Bail if project was destroyed
+        if (!currentBlueprint || buildStepIndex >= currentBlueprint.blocks.length) {
+            R.carrying = null;
+            R.state = 'idle';
+            R.idleTimer = 100;
+        }
+
+        if (R.state === 'gather' && !R.carrying) {
+            // Find nearest material
+            if (scatteredMaterials.length === 0) scatterMaterials();
+            const mat = findNearestMaterial();
+            if (mat) {
+                R.gatherTarget = mat;
+                const dx = mat.x - (R.x + CHAR_W / 2);
+                if (Math.abs(dx) > 20) {
+                    R.vx += Math.sign(dx) * 0.5;
+                    R.vx = Math.max(-R.maxSpeed, Math.min(R.maxSpeed, R.vx));
+                    R.facing = dx > 0 ? 1 : -1;
+                } else {
+                    // Pick it up!
+                    R.carrying = { color: mat.color, label: mat.label };
+                    const idx = scatteredMaterials.indexOf(mat);
+                    if (idx >= 0) scatteredMaterials.splice(idx, 1);
+                    R.gatherTarget = null;
+                    spawnParticle(R.x + CHAR_W/2, R.y, 'glow');
+                    R.state = 'build';
+                    R.buildPlaceTimer = 40 + Math.random() * 30;
+                }
+            } else {
+                scatterMaterials();
+            }
+        }
+
+        if (R.buildTimer <= 0 && !R.carrying) {
+            R.state = 'idle';
+            R.idleTimer = 80;
+        }
+    }
+
+    // ---- BUILD: carry material to build site and place it ----
+    if (R.state === 'build') {
+
+        if (R.carrying && currentBlueprint && buildStepIndex < currentBlueprint.blocks.length) {
+            // Walk toward build site
+            const targetX = buildSiteX + currentBlueprint.blocks[buildStepIndex][0] * (BLOCK_SIZE + 1);
+            const dx = targetX - (R.x + CHAR_W / 2);
+
+            if (Math.abs(dx) > 15) {
+                R.vx += Math.sign(dx) * 0.4;
+                R.vx = Math.max(-R.maxSpeed * 0.8, Math.min(R.maxSpeed * 0.8, R.vx));
+                R.facing = dx > 0 ? 1 : -1;
+            } else {
+                R.buildPlaceTimer--;
+                R.vx *= 0.7; // Slow down while placing
+                if (R.buildPlaceTimer <= 0) {
+                    // Place the block!
+                    const more = placeNextBuildBlock();
+                    R.carrying = null;
+
+                    // Build commentary
+                    if (R.speechTimer <= 0 && Math.random() < 0.4 && currentBlueprint) {
+                        const lines = currentBlueprint.buildLines;
+                        showSpeech(lines[Math.floor(Math.random() * lines.length)]);
+                    }
+
+                    if (more && scatteredMaterials.length > 0) {
+                        R.state = 'gather';
+                        R.buildTimer = 300;
+                    } else if (more) {
+                        scatterMaterials();
+                        R.state = 'gather';
+                        R.buildTimer = 300;
+                    } else {
+                        // Done building!
+                        showSpeech("*steps back*\n" + currentBlueprint.name + "\nis complete.\n*chef's kiss*", 400);
+                        currentBlueprint = null;
+                        buildCooldown = 1200; // Wait before building again
+                        R.state = 'idle';
+                        R.idleTimer = 300;
+                    }
+                }
+            }
+        } else {
+            // Lost the project mid-build
+            R.carrying = null;
+            R.state = 'idle';
+            R.idleTimer = 100;
         }
     }
 
@@ -1209,10 +1763,12 @@ function drawSydney(x, y, facing, frame) {
     ctx.arc(bx + 11, by - 38, 5, 0, Math.PI * 2);
     ctx.arc(bx + 21, by - 38, 5, 0, Math.PI * 2);
     ctx.stroke();
+    // Glasses bridge
     ctx.beginPath();
     ctx.moveTo(bx + 16, by - 38);
     ctx.lineTo(bx + 16, by - 38);
     ctx.stroke();
+    // Note: bridge is tiny at this scale - lenses are adjacent
 
     // Eyes behind glasses
     ctx.fillStyle = '#111';
@@ -1398,6 +1954,7 @@ function drawSideCharacters(time) {
 
 // Spawn side characters every 30-60 seconds
 let sideCharSpawnTimer = 0;
+let sideCharSpawnThreshold = 1800 + Math.random() * 1800;
 
 // ============================================
 // MAIN LOOP
@@ -1406,6 +1963,10 @@ let ambientSpawnTimer = 0;
 
 function loop(timestamp) {
     if (performance.now() - lastMouseMove > 5000) mouse.active = false;
+    // Decay mouse velocity so stale values don't affect predictions
+    if (performance.now() - lastMouseMove > 100) {
+        mouse.vx *= 0.9; mouse.vy *= 0.9;
+    }
 
     drawBackground(timestamp);
     ambientSpawnTimer++;
@@ -1414,14 +1975,22 @@ function loop(timestamp) {
     drawAmbientTexts();
 
     drawPlatforms(timestamp);
+
+    // Build system
+    updateBuildBlocks();
+    drawScatteredMaterials(timestamp);
+    drawBuildBlocks(timestamp);
+    if (buildCooldown > 0) buildCooldown--;
+
     updateParticles();
     drawParticles();
 
     // Side characters
     sideCharSpawnTimer++;
-    if (sideCharSpawnTimer > 1800 + Math.random() * 1800) { // 30-60s
+    if (sideCharSpawnTimer > sideCharSpawnThreshold) {
         spawnSideCharacter();
         sideCharSpawnTimer = 0;
+        sideCharSpawnThreshold = 1800 + Math.random() * 1800; // 30-60s
     }
     updateSideCharacters();
 
