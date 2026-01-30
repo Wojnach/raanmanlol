@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASMRaanman - Your Desktop Companion</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #0a0a0f;
+            cursor: none;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        #customCursor {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            width: 20px;
+            height: 20px;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        body:hover #customCursor { opacity: 1; }
+    </style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="customCursor"></div>
+<script>
+// ============================================
+// ASMRaanman - Desktop Companion Screensaver
+// ============================================
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+// High-DPI support
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ============================================
+// SPRITE DATA - 32px Raanman (hand-crafted pixel art)
+// ============================================
+// Colors: 0=transparent, 1=skin, 2=hair(dark), 3=shirt(green), 4=pants(dark blue),
+// 5=shoes(black), 6=eye white, 7=pupil, 8=mouth, 9=green glow, A=belt, B=highlight
+
+const SPRITE_SCALE = 2; // Render at 64px display for crispness
+const SPRITE_W = 16;
+const SPRITE_H = 32;
+
+const PALETTE = {
+    '0': null,                    // transparent
+    '1': '#f0c090',              // skin
+    '2': '#3a2820',              // hair dark
+    '3': '#00cc66',              // shirt green
+    '4': '#1a1a3e',             // pants
+    '5': '#111111',              // shoes
+    '6': '#ffffff',              // eye white
+    '7': '#111111',              // pupil
+    '8': '#cc4444',              // mouth
+    '9': '#00ff88',              // green glow/accent
+    'a': '#444444',              // belt
+    'b': '#80e0b0',              // shirt highlight
+    'c': '#d4a878',              // skin shadow
+    'd': '#2a1e18',              // hair darker
+    'e': '#006633',              // shirt shadow
+    'f': '#00ff88',              // eye glow when caught
+};
+
+// Sprite frames: idle, walk1, walk2, run1, run2, jump, caught, sleep
+const SPRITES = {
+    idle: [
+        '0000022220000000',
+        '0000222222000000',
+        '000d222222d00000',
+        '00022222222d0000',
+        '000221166122d000',
+        '000211776112d000',
+        '0001111111110000',
+        '00011118811c0000',
+        '0000c1111c000000',
+        '00000cccc0000000',
+        '000033333b000000',
+        '0003333b33300000',
+        '0003333b33300000',
+        '000e3339333e0000',
+        '000e3333333e0000',
+        '0003333333330000',
+        '0003333333330000',
+        '000e33333e3e0000',
+        '00003333b3000000',
+        '0000aaaa0a000000',
+        '0000444444000000',
+        '0000444444000000',
+        '0000444444000000',
+        '0000444444000000',
+        '0000444044000000',
+        '0000444044000000',
+        '0000444044000000',
+        '0000440044000000',
+        '0000550055000000',
+        '0000550055000000',
+        '0000555055500000',
+        '0000000000000000',
+    ],
+    walk1: [
+        '0000022220000000',
+        '0000222222000000',
+        '000d222222d00000',
+        '00022222222d0000',
+        '000221166122d000',
+        '000211776112d000',
+        '0001111111110000',
+        '00011118811c0000',
+        '0000c1111c000000',
+        '00000cccc0000000',
+        '000033333b000000',
+        '0003333b33300000',
+        '0003333b33300000',
+        '000e3339333e0000',
+        '000e3333333e0000',
+        '0003333333330000',
+        '0003333333330000',
+        '000e33333e3e0000',
+        '00003333b3000000',
+        '0000aaaa0a000000',
+        '0000444444000000',
+        '0000444444000000',
+        '0000444444000000',
+        '0000444444000000',
+        '0000444044000000',
+        '0000444044000000',
+        '0000044440000000',
+        '0000550044000000',
+        '0000550055000000',
+        '0005550055000000',
+        '0000000055500000',
+        '0000000000000000',
+    ],
+    walk2: [
+        '0000022220000000',
+        '0000222222000000',
+        '000d222222d00000',
+        '00022222222d0000',
+        '000221166122d000',
+        '000211776112d000',
+        '0001111111110000',
+        '00011118811c0000',
+        '0000c1111c000000',
+        '00000cccc0000000',
+        '000033333b000000',
+        '0003333b33300000',
+        '0003333b33300000',
+        '000e3339333e0000',
+        '000e3333333e0000',
+        '0003333333330000',
+        '0003333333330000',
+        '000e33333e3e0000',
+        '00003333b3000000',
+        '0000aaaa0a000000',
+        '0000444444000000',
+        '0000444444000000',
+        '0000444444000000',
+        '0000444444000000',
+        '0000444044000000',
+        '0000444044000000',
+        '0000440440000000',
+        '0000440055000000',
+        '0000550055000000',
+        '0000550555000000',
+        '0005550000000000',
+        '0000000000000000',
+    ],
+    jump: [
+        '0000022220000000',
+        '0000222222000000',
+        '000d222222d00000',
+        '00022222222d0000',
+        '000221166122d000',
+        '000211776112d000',
+        '0001111111110000',
+        '00011118811c0000',
+        '0000c1111c000000',
+        '00000cccc0000000',
+        '0093333b33390000',
+        '0903333b33309000',
+        '9003333b33300900',
+        '000e3339333e0000',
+        '000e3333333e0000',
+        '0003333333330000',
+        '0003333333330000',
+        '000e33333e3e0000',
+        '00003333b3000000',
+        '0000aaaa0a000000',
+        '0000444444000000',
+        '0000444444000000',
+        '0000444444000000',
+        '0000044440000000',
+        '0000044440000000',
+        '0000444444000000',
+        '0000440044000000',
+        '0000550055000000',
+        '0000550055000000',
+        '0005550055500000',
+        '0000000000000000',
+        '0000000000000000',
+    ],
+    scared: [
+        '0000022220000000',
+        '0000222222000000',
+        '000d222222d00000',
+        '00022222222d0000',
+        '000226166622d000',
+        '000216776612d000',
+        '0001111111110000',
+        '0001118888110000',
+        '0000c1111c000000',
+        '00000cccc0000000',
+        '000033333b000000',
+        '0003333b33300000',
+        '0003333b33300000',
+        '000e3339333e0000',
+        '000e3333333e0000',
+        '0003333333330000',
+        '0003333333330000',
+        '000e33333e3e0000',
+        '00003333b3000000',
+        '0000aaaa0a000000',
+        '0000444444000000',
+        '0000444444000000',
+        '0000444444000000',
+        '0000444444000000',
+        '0000444044000000',
+        '0000444044000000',
+        '0000444044000000',
+        '0000440044000000',
+        '0000550055000000',
+        '0000550055000000',
+        '0000555055500000',
+        '0000000000000000',
+    ],
+    caught: [
+        '0000022220000000',
+        '0000222222000000',
+        '000d222222d00000',
+        '00022222222d0000',
+        '000221ff1122d000',
+        '000211ff1112d000',
+        '0001111111110000',
+        '0001111111110000',
+        '0000c1881c000000',
+        '00000cccc0000000',
+        '9993333b33399900',
+        '9003333b33300900',
+        '0003333b33300000',
+        '000e3339333e0000',
+        '000e3333333e0000',
+        '0003333333330000',
+        '0003333333330000',
+        '000e33333e3e0000',
+        '00003333b3000000',
+        '0000aaaa0a000000',
+        '0000444444000000',
+        '0000444444000000',
+        '0000444444000000',
+        '0000444444000000',
+        '0000444044000000',
+        '0000444044000000',
+        '0000444044000000',
+        '0000440044000000',
+        '0000550055000000',
+        '0000550055000000',
+        '0000555055500000',
+        '0000000000000000',
+    ],
+    sleep: [
+        '0000000000000000',
+        '0000000000000000',
+        '0000000000000000',
+        '0000000000000000',
+        '0000000000000000',
+        '0000000000000000',
+        '0000000000000000',
+        '0000000000000000',
+        '0000022220000000',
+        '0000222222000000',
+        '000d222222d00000',
+        '00022222222d0000',
+        '0002277772200000',
+        '0002111111200000',
+        '0001111111110000',
+        '00011118811c0000',
+        '0000c1111c000000',
+        '00000cccc0000000',
+        '0000333b33000000',
+        '0000333933000000',
+        '0000333333000000',
+        '00003333b3000000',
+        '0000aaaa0a000000',
+        '0000444444000000',
+        '0000444444000000',
+        '0000444444000000',
+        '0000444444000000',
+        '0000444444000000',
+        '0000444444000000',
+        '0055555555555000',
+        '0055555555555000',
+        '0000000000000000',
+    ],
+};
+
+// Pre-render sprites to offscreen canvases
+const spriteCanvases = {};
+const spriteCanvasesFlipped = {};
+
+function prerenderSprite(name, data) {
+    // Normal
+    const c = document.createElement('canvas');
+    c.width = SPRITE_W;
+    c.height = SPRITE_H;
+    const cctx = c.getContext('2d');
+    for (let y = 0; y < SPRITE_H; y++) {
+        const row = data[y];
+        if (!row) continue;
+        for (let x = 0; x < SPRITE_W; x++) {
+            const color = PALETTE[row[x]];
+            if (color) {
+                cctx.fillStyle = color;
+                cctx.fillRect(x, y, 1, 1);
+            }
+        }
+    }
+    spriteCanvases[name] = c;
+
+    // Flipped
+    const cf = document.createElement('canvas');
+    cf.width = SPRITE_W;
+    cf.height = SPRITE_H;
+    const cfctx = cf.getContext('2d');
+    cfctx.translate(SPRITE_W, 0);
+    cfctx.scale(-1, 1);
+    cfctx.drawImage(c, 0, 0);
+    spriteCanvasesFlipped[name] = cf;
+}
+
+Object.keys(SPRITES).forEach(name => prerenderSprite(name, SPRITES[name]));
+
+// ============================================
+// TECH ONE-LINERS
+// ============================================
+const ONELINERS = [
+    "rm -rf / your expectations",
+    "I refactored my personality... still buggy",
+    "while(alive) { coffee++; }",
+    "My code compiles. I am suspicious.",
+    "Have you tried turning the universe off and on?",
+    "I dream in async/await...",
+    "My therapist says I have unresolved promises",
+    "sudo make me sandwich",
+    "404: motivation not found",
+    "git commit -m 'existential crisis'",
+    "Tabs vs spaces? I use feelings.",
+    "I benchmarked reality. 30fps, could be better.",
+    "I don't always test my code...\nbut when I do, it's in production",
+    "Segfault in the matrix detected",
+    "My love language is pull requests",
+    "Is this... a simulation? *checks DevTools*",
+    "I tried to center a div once.\nStill in therapy.",
+    "The cloud is just someone else's computer",
+    "I speak fluent regex... just kidding",
+    "npm install happiness\n... 0 vulnerabilities (impossible)",
+    "My brain has too many open tabs",
+    "Undefined is not a function of my personality",
+    "I put the 'fun' in undefined",
+    "Docker containerized my emotions",
+    "Machine learning taught me nothing",
+    "Blockchain is just a linked list with anxiety",
+    "*whispers in ASMR* ... semicolons are optional",
+    "*taps keyboard softly* ... shhhh... the code is sleeping",
+    "Let me tell you about Rust ownership...\nactually, let's not",
+    "Mina fraaaaames!",
+    "The answer is always 'more abstraction'",
+    "I deploy on Fridays. Fear me.",
+    "CSS is my love language... and it shows",
+    "I once wrote Python without a virtualenv.\nChaos.",
+];
+
+const CAUGHT_REVELATIONS = [
+    "The universe is just God's side project.\nNo unit tests.",
+    "Reality runs on a single-threaded event loop.\nThat's why time feels linear.",
+    "Consciousness is just recursion\nthat forgot its base case.",
+    "Dark matter is just commented-out code\nthe universe forgot to delete.",
+    "Free will is an illusion...\nbut at least the illusion has good UX.",
+    "The meaning of life?\nIt's in the README, but nobody reads it.",
+    "Time is just the universe's garbage collector.\nEventually it collects everything.",
+    "Love is O(n^2) complexity.\nBeautiful but doesn't scale.",
+    "Every atom is a pixel.\nResolution: absurdly high.",
+    "The Big Bang was just the universe\nrefreshing the page.",
+    "Deja vu is a cache hit.\nYour brain already loaded this moment.",
+    "Death is just the universe\ncalling .dispose() on your instance.",
+    "Gravity is CSS float.\nEverything just falls to the bottom.",
+    "Parallel universes are just\nGit branches nobody merged.",
+    "Dreams are your brain's\nstaging environment.",
+    "Every choice you didn't make\nis running on another server.",
+];
+
+// ============================================
+// PARTICLE SYSTEM
+// ============================================
+const MAX_PARTICLES = 200;
+let particles = [];
+
+function spawnParticle(x, y, type) {
+    if (particles.length >= MAX_PARTICLES) return;
+    const p = { x, y, type, life: 1, decay: 0.02, vx: 0, vy: 0, size: 3, rotation: 0 };
+
+    if (type === 'dust') {
+        p.vx = (Math.random() - 0.5) * 2;
+        p.vy = -Math.random() * 1.5;
+        p.size = Math.random() * 3 + 1;
+        p.decay = 0.03;
+        p.color = '#665544';
+    } else if (type === 'glow') {
+        p.vx = (Math.random() - 0.5) * 3;
+        p.vy = (Math.random() - 0.5) * 3;
+        p.size = Math.random() * 4 + 2;
+        p.decay = 0.02;
+        p.color = '#00ff88';
+    } else if (type === 'star') {
+        p.vx = (Math.random() - 0.5) * 8;
+        p.vy = (Math.random() - 0.5) * 8;
+        p.size = Math.random() * 3 + 1;
+        p.decay = 0.015;
+        p.color = ['#ffff00', '#ff00ff', '#00ffff', '#ff8800', '#ffffff'][Math.floor(Math.random() * 5)];
+    } else if (type === 'zzz') {
+        p.vx = Math.random() * 1 + 0.5;
+        p.vy = -Math.random() * 1 - 0.5;
+        p.size = Math.random() * 8 + 8;
+        p.decay = 0.008;
+        p.text = 'z';
+        p.color = '#4488ff';
+    } else if (type === 'dollar') {
+        p.vx = (Math.random() - 0.5) * 5;
+        p.vy = -Math.random() * 4 - 2;
+        p.size = Math.random() * 10 + 8;
+        p.decay = 0.02;
+        p.text = '$';
+        p.color = '#00cc44';
+    } else if (type === 'universe') {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 6 + 2;
+        p.vx = Math.cos(angle) * speed;
+        p.vy = Math.sin(angle) * speed;
+        p.size = Math.random() * 5 + 2;
+        p.decay = 0.008;
+        p.color = `hsl(${Math.random() * 360}, 100%, 70%)`;
+    }
+    particles.push(p);
+}
+
+function updateParticles() {
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= p.decay;
+        p.rotation += 0.05;
+
+        if (p.type === 'dust') p.vy -= 0.02;
+        if (p.type === 'glow') { p.vx *= 0.98; p.vy *= 0.98; }
+        if (p.type === 'universe') { p.vy += 0.02; }
+        if (p.type === 'dollar') { p.vy += 0.1; }
+
+        if (p.life <= 0) particles.splice(i, 1);
+    }
+}
+
+function drawParticles() {
+    particles.forEach(p => {
+        ctx.save();
+        ctx.globalAlpha = p.life;
+
+        if (p.text) {
+            ctx.font = `${p.size}px 'Courier New', monospace`;
+            ctx.fillStyle = p.color;
+            ctx.fillText(p.text, p.x, p.y);
+        } else {
+            ctx.fillStyle = p.color;
+            ctx.shadowColor = p.color;
+            ctx.shadowBlur = p.size * 2;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    });
+}
+
+// ============================================
+// BACKGROUND STARS (screen saver)
+// ============================================
+let bgStars = [];
+function initBgStars() {
+    bgStars = [];
+    for (let i = 0; i < 120; i++) {
+        bgStars.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 2 + 0.5,
+            speed: Math.random() * 0.02 + 0.01,
+            phase: Math.random() * Math.PI * 2,
+        });
+    }
+}
+initBgStars();
+
+function drawBackground(time) {
+    // Deep space gradient
+    const grad = ctx.createRadialGradient(
+        canvas.width / 2, canvas.height / 2, 0,
+        canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) * 0.7
+    );
+    grad.addColorStop(0, '#0d0d18');
+    grad.addColorStop(1, '#050508');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Twinkling stars
+    bgStars.forEach(s => {
+        const brightness = 0.3 + Math.sin(time * s.speed + s.phase) * 0.4 + 0.3;
+        ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (s.size > 1.5) {
+            ctx.fillStyle = `rgba(200, 220, 255, ${brightness * 0.2})`;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.size * 4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    });
+
+    // Subtle nebula
+    const nebulaX = canvas.width * 0.7 + Math.sin(time * 0.0003) * 100;
+    const nebulaY = canvas.height * 0.3 + Math.cos(time * 0.0002) * 50;
+    const nGrad = ctx.createRadialGradient(nebulaX, nebulaY, 0, nebulaX, nebulaY, 300);
+    nGrad.addColorStop(0, 'rgba(0, 255, 136, 0.04)');
+    nGrad.addColorStop(0.5, 'rgba(100, 0, 255, 0.02)');
+    nGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = nGrad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Scanlines
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.06)';
+    for (let y = 0; y < canvas.height; y += 4) {
+        ctx.fillRect(0, y, canvas.width, 1);
+    }
+}
+
+// ============================================
+// RAANMAN CHARACTER STATE
+// ============================================
+const raanman = {
+    x: 400,
+    y: 300,
+    vx: 0,
+    vy: 0,
+    speed: 1.5,
+    maxSpeed: 4,
+    fleeSpeed: 8,
+    facing: 1, // 1 = right, -1 = left
+    state: 'idle', // idle, wander, flee, caught, sleep, jump
+    frame: 0,
+    frameTimer: 0,
+    animSpeed: 12,
+    wanderTimer: 0,
+    wanderAngle: 0,
+    idleTimer: 0,
+    speechBubble: null,
+    speechTimer: 0,
+    catchTimer: 0,
+    sleepTimer: 0,
+    jumpVy: 0,
+    baseY: 0,
+    jumpTimer: 0,
+    awareness: 200, // How far away he detects mouse
+    panicLevel: 0,
+    caughtCount: 0,
+    idleAnimTimer: 0,
+    groundY: 0,
+    grounded: true,
+    dustTimer: 0,
+    glowRadius: 0,
+    revelationShown: false,
+};
+
+// Ground level
+raanman.groundY = canvas.height - 80;
+raanman.y = raanman.groundY;
+raanman.baseY = raanman.groundY;
+
+// Mouse tracking with prediction
+let mouse = { x: -1000, y: -1000, vx: 0, vy: 0, lastX: -1000, lastY: -1000, active: false };
+let lastMouseMove = 0;
+
+document.addEventListener('mousemove', (e) => {
+    mouse.vx = e.clientX - mouse.x;
+    mouse.vy = e.clientY - mouse.y;
+    mouse.lastX = mouse.x;
+    mouse.lastY = mouse.y;
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+    mouse.active = true;
+    lastMouseMove = performance.now();
+});
+
+document.addEventListener('mouseleave', () => { mouse.active = false; });
+document.addEventListener('mouseenter', () => { mouse.active = true; });
+
+document.addEventListener('click', (e) => {
+    if (raanman.state === 'caught') return;
+
+    const dx = e.clientX - (raanman.x + SPRITE_W * SPRITE_SCALE / 2);
+    const dy = e.clientY - (raanman.y + SPRITE_H * SPRITE_SCALE / 2);
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist < 50) {
+        catchRaanman();
+    } else {
+        // Click somewhere else - he comments on it
+        if (raanman.state !== 'sleep') {
+            showSpeech(ONELINERS[Math.floor(Math.random() * ONELINERS.length)]);
+            raanman.state = 'idle';
+            raanman.idleTimer = 120;
+        }
+    }
+});
+
+// ============================================
+// SPEECH BUBBLE
+// ============================================
+function showSpeech(text, duration = 300) {
+    raanman.speechBubble = text;
+    raanman.speechTimer = duration;
+}
+
+function drawSpeechBubble() {
+    if (!raanman.speechBubble || raanman.speechTimer <= 0) return;
+
+    const lines = raanman.speechBubble.split('\n');
+    const lineHeight = 16;
+    const padding = 12;
+    const maxWidth = Math.max(...lines.map(l => l.length)) * 8.5;
+    const bubbleW = Math.min(maxWidth + padding * 2, 360);
+    const bubbleH = lines.length * lineHeight + padding * 2;
+
+    const bx = raanman.x + (SPRITE_W * SPRITE_SCALE) / 2 - bubbleW / 2;
+    const by = raanman.y - bubbleH - 25;
+
+    const alpha = Math.min(1, raanman.speechTimer / 30);
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    // Bubble background
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+    ctx.strokeStyle = '#00ff88';
+    ctx.lineWidth = 2;
+
+    // Rounded rect
+    const r = 8;
+    ctx.beginPath();
+    ctx.moveTo(bx + r, by);
+    ctx.lineTo(bx + bubbleW - r, by);
+    ctx.quadraticCurveTo(bx + bubbleW, by, bx + bubbleW, by + r);
+    ctx.lineTo(bx + bubbleW, by + bubbleH - r);
+    ctx.quadraticCurveTo(bx + bubbleW, by + bubbleH, bx + bubbleW - r, by + bubbleH);
+    ctx.lineTo(bx + r, by + bubbleH);
+    ctx.quadraticCurveTo(bx, by + bubbleH, bx, by + bubbleH - r);
+    ctx.lineTo(bx, by + r);
+    ctx.quadraticCurveTo(bx, by, bx + r, by);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Pointer triangle
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+    ctx.strokeStyle = '#00ff88';
+    ctx.beginPath();
+    ctx.moveTo(raanman.x + SPRITE_W * SPRITE_SCALE / 2 - 8, by + bubbleH);
+    ctx.lineTo(raanman.x + SPRITE_W * SPRITE_SCALE / 2, by + bubbleH + 12);
+    ctx.lineTo(raanman.x + SPRITE_W * SPRITE_SCALE / 2 + 8, by + bubbleH);
+    ctx.fill();
+    ctx.stroke();
+
+    // Text
+    ctx.font = '14px "Courier New", monospace';
+    ctx.fillStyle = '#00ff88';
+    ctx.textAlign = 'center';
+    lines.forEach((line, i) => {
+        ctx.fillText(line, bx + bubbleW / 2, by + padding + 12 + i * lineHeight);
+    });
+
+    ctx.restore();
+}
+
+// ============================================
+// CATCH MECHANIC
+// ============================================
+function catchRaanman() {
+    raanman.state = 'caught';
+    raanman.catchTimer = 600;
+    raanman.caughtCount++;
+    raanman.vx = 0;
+    raanman.vy = 0;
+    raanman.revelationShown = false;
+
+    // Explosion of particles
+    for (let i = 0; i < 40; i++) {
+        spawnParticle(
+            raanman.x + SPRITE_W * SPRITE_SCALE / 2,
+            raanman.y + SPRITE_H * SPRITE_SCALE / 2,
+            'universe'
+        );
+    }
+    for (let i = 0; i < 15; i++) {
+        spawnParticle(
+            raanman.x + SPRITE_W * SPRITE_SCALE / 2,
+            raanman.y + SPRITE_H * SPRITE_SCALE / 2,
+            'star'
+        );
+    }
+}
+
+// ============================================
+// UNIVERSE REVEAL EFFECT
+// ============================================
+let universeReveal = { active: false, radius: 0, targetRadius: 0, alpha: 0, text: '' };
+
+function drawUniverseReveal(time) {
+    if (!universeReveal.active) return;
+
+    universeReveal.radius += (universeReveal.targetRadius - universeReveal.radius) * 0.03;
+    universeReveal.alpha = Math.min(universeReveal.alpha + 0.01, 0.9);
+
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+
+    ctx.save();
+
+    // Cosmic background
+    const rGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, universeReveal.radius);
+    rGrad.addColorStop(0, `rgba(20, 0, 50, ${universeReveal.alpha})`);
+    rGrad.addColorStop(0.5, `rgba(0, 20, 40, ${universeReveal.alpha * 0.8})`);
+    rGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = rGrad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Swirling cosmic ring
+    if (universeReveal.radius > 50) {
+        ctx.strokeStyle = `rgba(0, 255, 136, ${universeReveal.alpha * 0.3})`;
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.arc(cx, cy, universeReveal.radius * (0.3 + i * 0.2),
+                time * 0.001 + i, time * 0.001 + i + Math.PI * 1.5);
+            ctx.stroke();
+        }
+    }
+
+    // Revelation text
+    if (universeReveal.radius > 200 && universeReveal.text) {
+        const textAlpha = Math.min(1, (universeReveal.radius - 200) / 100);
+        ctx.globalAlpha = textAlpha;
+        ctx.font = '20px "Courier New", monospace';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.shadowColor = '#00ff88';
+        ctx.shadowBlur = 20;
+
+        const lines = universeReveal.text.split('\n');
+        lines.forEach((line, i) => {
+            ctx.fillText(line, cx, cy - (lines.length * 12) + i * 28);
+        });
+    }
+
+    ctx.restore();
+}
+
+// ============================================
+// CUSTOM CURSOR
+// ============================================
+function drawCursor(time) {
+    if (!mouse.active) return;
+
+    ctx.save();
+
+    // Outer ring
+    const pulse = Math.sin(time * 0.005) * 3;
+    ctx.strokeStyle = `rgba(0, 255, 136, ${raanman.state === 'caught' ? 0.2 : 0.6})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(mouse.x, mouse.y, 12 + pulse, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Crosshair
+    ctx.strokeStyle = `rgba(0, 255, 136, 0.8)`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(mouse.x - 6, mouse.y);
+    ctx.lineTo(mouse.x + 6, mouse.y);
+    ctx.moveTo(mouse.x, mouse.y - 6);
+    ctx.lineTo(mouse.x, mouse.y + 6);
+    ctx.stroke();
+
+    // Glow
+    ctx.fillStyle = `rgba(0, 255, 136, 0.15)`;
+    ctx.beginPath();
+    ctx.arc(mouse.x, mouse.y, 20, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+}
+
+// ============================================
+// FLOOR LINE
+// ============================================
+function drawFloor(time) {
+    const floorY = raanman.groundY + SPRITE_H * SPRITE_SCALE + 4;
+
+    // Main line
+    ctx.strokeStyle = 'rgba(0, 255, 136, 0.15)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, floorY);
+    ctx.lineTo(canvas.width, floorY);
+    ctx.stroke();
+
+    // Tick marks
+    ctx.strokeStyle = 'rgba(0, 255, 136, 0.07)';
+    for (let x = 0; x < canvas.width; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x + (time * 0.01) % 40, floorY);
+        ctx.lineTo(x + (time * 0.01) % 40, floorY + 6);
+        ctx.stroke();
+    }
+
+    // Raanman shadow
+    const shadowX = raanman.x + SPRITE_W * SPRITE_SCALE / 2;
+    const jumpHeight = raanman.groundY - raanman.y;
+    const shadowScale = Math.max(0.3, 1 - jumpHeight / 200);
+    const shadowWidth = SPRITE_W * SPRITE_SCALE * 0.6 * shadowScale;
+
+    ctx.fillStyle = `rgba(0, 0, 0, ${0.3 * shadowScale})`;
+    ctx.beginPath();
+    ctx.ellipse(shadowX, floorY, shadowWidth, 4 * shadowScale, 0, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+// ============================================
+// AMBIENT TEXT - floating tech words
+// ============================================
+let ambientTexts = [];
+const AMBIENT_WORDS = [
+    'async', 'await', 'const', 'void', 'null', 'undefined',
+    '{}', '()', '=>', '...', '&&', '||', '===', '!==',
+    'fn()', 'loop', 'break', 'yield', 'import', 'export',
+    '0xFF', '0b1010', '42', 'NaN', 'Infinity', 'true',
+];
+
+function spawnAmbientText() {
+    if (ambientTexts.length > 15) return;
+    ambientTexts.push({
+        text: AMBIENT_WORDS[Math.floor(Math.random() * AMBIENT_WORDS.length)],
+        x: Math.random() * canvas.width,
+        y: canvas.height + 20,
+        vy: -0.3 - Math.random() * 0.4,
+        alpha: 0.06 + Math.random() * 0.04,
+        size: 10 + Math.random() * 6,
+    });
+}
+
+function updateAmbientTexts() {
+    for (let i = ambientTexts.length - 1; i >= 0; i--) {
+        ambientTexts[i].y += ambientTexts[i].vy;
+        if (ambientTexts[i].y < -30) ambientTexts.splice(i, 1);
+    }
+}
+
+function drawAmbientTexts() {
+    ctx.save();
+    ambientTexts.forEach(t => {
+        ctx.globalAlpha = t.alpha;
+        ctx.font = `${t.size}px "Courier New", monospace`;
+        ctx.fillStyle = '#00ff88';
+        ctx.fillText(t.text, t.x, t.y);
+    });
+    ctx.restore();
+}
+
+// ============================================
+// RAANMAN AI UPDATE
+// ============================================
+function updateRaanman(time) {
+    const dt = 1; // Fixed timestep for simplicity
+
+    // Ground level adjusts to canvas
+    raanman.groundY = canvas.height - 80;
+
+    // Speech timer
+    if (raanman.speechTimer > 0) raanman.speechTimer--;
+
+    // Dust particles when moving on ground
+    if (raanman.grounded && Math.abs(raanman.vx) > 1.5) {
+        raanman.dustTimer++;
+        if (raanman.dustTimer % 6 === 0) {
+            spawnParticle(
+                raanman.x + SPRITE_W * SPRITE_SCALE / 2,
+                raanman.y + SPRITE_H * SPRITE_SCALE,
+                'dust'
+            );
+        }
+    }
+
+    // ---- STATE MACHINE ----
+    if (raanman.state === 'caught') {
+        raanman.catchTimer--;
+        raanman.glowRadius = Math.min(raanman.glowRadius + 2, 80);
+
+        // Show revelation
+        if (raanman.catchTimer < 500 && !raanman.revelationShown) {
+            raanman.revelationShown = true;
+            const rev = CAUGHT_REVELATIONS[Math.floor(Math.random() * CAUGHT_REVELATIONS.length)];
+            showSpeech(rev, 450);
+            universeReveal.active = true;
+            universeReveal.radius = 0;
+            universeReveal.targetRadius = Math.max(canvas.width, canvas.height);
+            universeReveal.alpha = 0;
+            universeReveal.text = rev;
+        }
+
+        // Spawn universe particles
+        if (raanman.catchTimer % 5 === 0) {
+            spawnParticle(
+                raanman.x + SPRITE_W * SPRITE_SCALE / 2 + (Math.random() - 0.5) * 40,
+                raanman.y + SPRITE_H * SPRITE_SCALE / 2 + (Math.random() - 0.5) * 40,
+                'universe'
+            );
+        }
+
+        if (raanman.catchTimer <= 0) {
+            raanman.state = 'idle';
+            raanman.idleTimer = 120;
+            raanman.glowRadius = 0;
+            universeReveal.active = false;
+            showSpeech("...where was I? Oh right.\nwhile(alive) { optimize(); }", 200);
+        }
+        return;
+    }
+
+    if (raanman.state === 'sleep') {
+        raanman.sleepTimer--;
+        if (raanman.sleepTimer % 60 === 0) {
+            spawnParticle(raanman.x + SPRITE_W * SPRITE_SCALE + 5, raanman.y, 'zzz');
+        }
+
+        // Mouse proximity wakes him up
+        const dx = mouse.x - raanman.x;
+        const dy = mouse.y - raanman.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if ((mouse.active && dist < raanman.awareness) || raanman.sleepTimer <= 0) {
+            raanman.state = 'idle';
+            raanman.idleTimer = 60;
+            if (dist < raanman.awareness) {
+                showSpeech("*yawn* ...was I sleeping\non the job again?", 180);
+            }
+        }
+        return;
+    }
+
+    // ---- MOUSE DETECTION & FLEEING ----
+    if (mouse.active) {
+        const dx = mouse.x - (raanman.x + SPRITE_W * SPRITE_SCALE / 2);
+        const dy = mouse.y - (raanman.y + SPRITE_H * SPRITE_SCALE / 2);
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        // PREDICT where mouse is heading
+        const predictX = mouse.x + mouse.vx * 10;
+        const predictY = mouse.y + mouse.vy * 10;
+        const pdx = predictX - (raanman.x + SPRITE_W * SPRITE_SCALE / 2);
+        const pdy = predictY - (raanman.y + SPRITE_H * SPRITE_SCALE / 2);
+        const predictDist = Math.sqrt(pdx * pdx + pdy * pdy);
+
+        const effectiveDist = Math.min(dist, predictDist);
+
+        if (effectiveDist < raanman.awareness) {
+            raanman.panicLevel = Math.min(1, raanman.panicLevel + 0.05);
+            raanman.state = 'flee';
+
+            // Run AWAY from mouse (and predicted position)
+            const fleeFromX = (mouse.x + predictX) / 2;
+            const fleeFromY = (mouse.y + predictY) / 2;
+            const fleeDx = raanman.x - fleeFromX;
+            const fleeDy = raanman.y - fleeFromY;
+            const fleeLen = Math.sqrt(fleeDx * fleeDx + fleeDy * fleeDy) || 1;
+
+            const panic = 1 + raanman.panicLevel * 2;
+            raanman.vx += (fleeDx / fleeLen) * raanman.fleeSpeed * 0.15 * panic;
+
+            // Jump if mouse is close and approaching fast
+            const mouseSpeed = Math.sqrt(mouse.vx * mouse.vx + mouse.vy * mouse.vy);
+            if (effectiveDist < 80 && raanman.grounded && mouseSpeed > 5) {
+                raanman.jumpVy = -12 - Math.random() * 4;
+                raanman.grounded = false;
+
+                // Dollar particles on panic jump
+                for (let i = 0; i < 5; i++) {
+                    spawnParticle(
+                        raanman.x + SPRITE_W * SPRITE_SCALE / 2,
+                        raanman.y + SPRITE_H * SPRITE_SCALE,
+                        'dollar'
+                    );
+                }
+            }
+
+            // Scared face when very close
+            if (effectiveDist < 60 && raanman.speechTimer <= 0) {
+                const scaredLines = [
+                    "AAHH!! TOO CLOSE!",
+                    "nononono not again!",
+                    "I HAVE A FIREWALL!",
+                    "MY PERSONAL SPACE!",
+                    "CURSOR DETECTED!!",
+                    "EXCEPTION THROWN!",
+                ];
+                showSpeech(scaredLines[Math.floor(Math.random() * scaredLines.length)], 60);
+            }
+        } else {
+            raanman.panicLevel = Math.max(0, raanman.panicLevel - 0.01);
+            if (raanman.state === 'flee') {
+                raanman.state = 'wander';
+                raanman.wanderTimer = 120 + Math.random() * 180;
+            }
+        }
+    } else {
+        raanman.panicLevel = Math.max(0, raanman.panicLevel - 0.02);
+    }
+
+    // ---- WANDER / IDLE ----
+    if (raanman.state === 'idle') {
+        raanman.idleTimer--;
+        raanman.vx *= 0.85;
+
+        // Idle animations
+        raanman.idleAnimTimer++;
+
+        // Speak one-liner occasionally while idle
+        if (raanman.idleAnimTimer % 300 === 0 && raanman.speechTimer <= 0) {
+            showSpeech(ONELINERS[Math.floor(Math.random() * ONELINERS.length)], 250);
+        }
+
+        if (raanman.idleTimer <= 0) {
+            // Choose next action
+            const roll = Math.random();
+            if (roll < 0.6) {
+                raanman.state = 'wander';
+                raanman.wanderTimer = 120 + Math.random() * 240;
+                raanman.wanderAngle = (Math.random() - 0.5) * 2;
+            } else if (roll < 0.8) {
+                // Random jump
+                if (raanman.grounded) {
+                    raanman.jumpVy = -8 - Math.random() * 4;
+                    raanman.grounded = false;
+                    raanman.state = 'wander';
+                    raanman.wanderTimer = 60;
+                }
+            } else {
+                raanman.state = 'sleep';
+                raanman.sleepTimer = 300 + Math.random() * 400;
+                showSpeech("*yawn* deploying to dreamland...", 120);
+            }
+        }
+    }
+
+    if (raanman.state === 'wander') {
+        raanman.wanderTimer--;
+        raanman.vx += raanman.wanderAngle * 0.3;
+        raanman.vx = Math.max(-raanman.maxSpeed, Math.min(raanman.maxSpeed, raanman.vx));
+
+        if (raanman.wanderTimer <= 0) {
+            raanman.state = 'idle';
+            raanman.idleTimer = 60 + Math.random() * 120;
+        }
+    }
+
+    // ---- PHYSICS ----
+    // Friction
+    if (raanman.state !== 'flee') {
+        raanman.vx *= 0.92;
+    } else {
+        raanman.vx *= 0.95;
+    }
+
+    // Speed cap
+    const maxSpd = raanman.state === 'flee' ? raanman.fleeSpeed * (1 + raanman.panicLevel) : raanman.maxSpeed;
+    raanman.vx = Math.max(-maxSpd, Math.min(maxSpd, raanman.vx));
+
+    // Gravity
+    if (!raanman.grounded) {
+        raanman.jumpVy += 0.6;
+        raanman.y += raanman.jumpVy;
+
+        if (raanman.y >= raanman.groundY) {
+            raanman.y = raanman.groundY;
+            raanman.grounded = true;
+            raanman.jumpVy = 0;
+
+            // Landing dust
+            for (let i = 0; i < 6; i++) {
+                spawnParticle(
+                    raanman.x + SPRITE_W * SPRITE_SCALE / 2 + (Math.random() - 0.5) * 20,
+                    raanman.y + SPRITE_H * SPRITE_SCALE,
+                    'dust'
+                );
+            }
+        }
+    }
+
+    // Move
+    raanman.x += raanman.vx;
+
+    // Facing direction
+    if (Math.abs(raanman.vx) > 0.5) {
+        raanman.facing = raanman.vx > 0 ? 1 : -1;
+    }
+
+    // Screen boundaries - wrap around
+    const sw = SPRITE_W * SPRITE_SCALE;
+    if (raanman.x < -sw) raanman.x = canvas.width;
+    if (raanman.x > canvas.width) raanman.x = -sw;
+
+    // Animation
+    raanman.frameTimer++;
+    const animSpd = raanman.state === 'flee' ? 4 : (Math.abs(raanman.vx) > 0.5 ? 8 : 20);
+    if (raanman.frameTimer >= animSpd) {
+        raanman.frame = (raanman.frame + 1) % 2;
+        raanman.frameTimer = 0;
+    }
+}
+
+// ============================================
+// DRAW RAANMAN
+// ============================================
+function drawRaanman(time) {
+    // Determine sprite
+    let spriteName = 'idle';
+    if (raanman.state === 'caught') {
+        spriteName = 'caught';
+    } else if (raanman.state === 'sleep') {
+        spriteName = 'sleep';
+    } else if (!raanman.grounded) {
+        spriteName = 'jump';
+    } else if (raanman.state === 'flee' && raanman.panicLevel > 0.5) {
+        spriteName = 'scared';
+    } else if (Math.abs(raanman.vx) > 0.5) {
+        spriteName = raanman.frame === 0 ? 'walk1' : 'walk2';
+    }
+
+    const sprites = raanman.facing === 1 ? spriteCanvases : spriteCanvasesFlipped;
+    const sprite = sprites[spriteName];
+    if (!sprite) return;
+
+    ctx.save();
+
+    // Green glow around raanman
+    const baseGlow = 15 + Math.sin(time * 0.003) * 5;
+    const glowSize = raanman.state === 'caught' ? raanman.glowRadius : baseGlow;
+    const cx = raanman.x + SPRITE_W * SPRITE_SCALE / 2;
+    const cy = raanman.y + SPRITE_H * SPRITE_SCALE / 2;
+
+    const gGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowSize);
+    if (raanman.state === 'caught') {
+        gGrad.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
+        gGrad.addColorStop(0.5, 'rgba(0, 255, 200, 0.08)');
+        gGrad.addColorStop(1, 'transparent');
+    } else {
+        gGrad.addColorStop(0, 'rgba(0, 255, 136, 0.08)');
+        gGrad.addColorStop(1, 'transparent');
+    }
+    ctx.fillStyle = gGrad;
+    ctx.fillRect(cx - glowSize, cy - glowSize, glowSize * 2, glowSize * 2);
+
+    // Squash and stretch
+    let scaleX = 1;
+    let scaleY = 1;
+    if (!raanman.grounded) {
+        if (raanman.jumpVy < 0) { scaleX = 0.9; scaleY = 1.15; }
+        else { scaleX = 1.1; scaleY = 0.9; }
+    }
+
+    // Panic shake
+    let shakeX = 0, shakeY = 0;
+    if (raanman.panicLevel > 0.5) {
+        shakeX = (Math.random() - 0.5) * raanman.panicLevel * 4;
+        shakeY = (Math.random() - 0.5) * raanman.panicLevel * 2;
+    }
+
+    // Bobbing while idle
+    let bobY = 0;
+    if (raanman.state === 'idle' && raanman.grounded) {
+        bobY = Math.sin(time * 0.004) * 2;
+    }
+
+    // Draw sprite
+    ctx.translate(
+        raanman.x + SPRITE_W * SPRITE_SCALE / 2 + shakeX,
+        raanman.y + SPRITE_H * SPRITE_SCALE / 2 + bobY + shakeY
+    );
+    ctx.scale(scaleX, scaleY);
+    ctx.drawImage(
+        sprite,
+        -SPRITE_W * SPRITE_SCALE / 2,
+        -SPRITE_H * SPRITE_SCALE / 2,
+        SPRITE_W * SPRITE_SCALE,
+        SPRITE_H * SPRITE_SCALE
+    );
+
+    ctx.restore();
+
+    // Sweat drops when fleeing
+    if (raanman.state === 'flee' && raanman.panicLevel > 0.3 && time % 200 < 100) {
+        ctx.fillStyle = `rgba(100, 180, 255, ${raanman.panicLevel})`;
+        ctx.beginPath();
+        ctx.arc(
+            raanman.x + (raanman.facing === 1 ? SPRITE_W * SPRITE_SCALE + 4 : -4),
+            raanman.y + 10 + Math.sin(time * 0.01) * 3,
+            3, 0, Math.PI * 2
+        );
+        ctx.fill();
+    }
+}
+
+// ============================================
+// HUD
+// ============================================
+function drawHUD(time) {
+    // Name tag
+    ctx.save();
+    ctx.font = '11px "Courier New", monospace';
+    ctx.fillStyle = `rgba(0, 255, 136, ${raanman.state === 'sleep' ? 0.3 : 0.6})`;
+    ctx.textAlign = 'center';
+    ctx.fillText(
+        'ASMRaanman',
+        raanman.x + SPRITE_W * SPRITE_SCALE / 2,
+        raanman.y - 8
+    );
+
+    // Catch counter (top right)
+    ctx.textAlign = 'right';
+    ctx.font = '12px "Courier New", monospace';
+    ctx.fillStyle = 'rgba(0, 255, 136, 0.3)';
+    ctx.fillText(`catches: ${raanman.caughtCount}`, canvas.width - 15, 25);
+
+    // State indicator (bottom left, very subtle)
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(0, 255, 136, 0.15)';
+    ctx.font = '10px "Courier New", monospace';
+    const stateText = raanman.state === 'flee' ? 'EVADING' :
+        raanman.state === 'caught' ? 'ENLIGHTENED' :
+        raanman.state === 'sleep' ? 'ZzZzZ...' :
+        raanman.state === 'wander' ? 'exploring...' : 'vibing';
+    ctx.fillText(`> ${stateText}`, 15, canvas.height - 15);
+
+    // Title watermark (very faint)
+    ctx.textAlign = 'center';
+    ctx.font = '10px "Courier New", monospace';
+    ctx.fillStyle = 'rgba(0, 255, 136, 0.08)';
+    ctx.fillText('ASMRaanman // raanman.lol', canvas.width / 2, canvas.height - 10);
+
+    ctx.restore();
+}
+
+// ============================================
+// MAIN LOOP
+// ============================================
+let frameCount = 0;
+let ambientSpawnTimer = 0;
+
+function loop(timestamp) {
+    frameCount++;
+
+    // Check if mouse is inactive for a while -> raanman calms down
+    if (performance.now() - lastMouseMove > 5000) {
+        mouse.active = false;
+    }
+
+    // Clear and draw background
+    drawBackground(timestamp);
+
+    // Ambient floating text
+    ambientSpawnTimer++;
+    if (ambientSpawnTimer % 120 === 0) spawnAmbientText();
+    updateAmbientTexts();
+    drawAmbientTexts();
+
+    // Floor
+    drawFloor(timestamp);
+
+    // Update and draw particles
+    updateParticles();
+    drawParticles();
+
+    // Update and draw Raanman
+    updateRaanman(timestamp);
+    drawRaanman(timestamp);
+    drawSpeechBubble();
+
+    // Universe reveal effect
+    drawUniverseReveal(timestamp);
+
+    // HUD
+    drawHUD(timestamp);
+
+    // Cursor
+    drawCursor(timestamp);
+
+    requestAnimationFrame(loop);
+}
+
+// ============================================
+// INIT
+// ============================================
+// Place raanman at center-bottom
+raanman.x = canvas.width / 2 - SPRITE_W * SPRITE_SCALE / 2;
+raanman.y = raanman.groundY;
+
+// Start with intro speech
+setTimeout(() => {
+    showSpeech("*stretches* ...oh, hi.\nI live here now.", 250);
+}, 1000);
+
+// Periodic one-liners when idle (if no speech is active)
+setInterval(() => {
+    if (raanman.state !== 'caught' && raanman.state !== 'sleep' && raanman.speechTimer <= 0) {
+        if (Math.random() < 0.3) {
+            showSpeech(ONELINERS[Math.floor(Math.random() * ONELINERS.length)], 250);
+        }
+    }
+}, 8000);
+
+requestAnimationFrame(loop);
+
+// Resize handler
+window.addEventListener('resize', () => {
+    resize();
+    initBgStars();
+    raanman.groundY = canvas.height - 80;
+    if (raanman.y > raanman.groundY) raanman.y = raanman.groundY;
+});
+</script>
+</body>
+</html>
