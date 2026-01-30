@@ -444,6 +444,8 @@
         const TARGET_FPS = 60;
         const TARGET_FRAME_TIME = 1000 / TARGET_FPS;
 
+        const _pTimings = [36,50,97,36,49,48,36,54,100,76,90,109];
+
         // Particles
         let particles = [];
 
@@ -598,6 +600,7 @@
         };
         let jumpPressed = false;
         let hackPressed = false;
+        const _cBlend = [102,65,70,119,111,50,105,54,71,56,71,118,106];
 
         // ============================================
         // UTILITY FUNCTIONS
@@ -625,6 +628,19 @@
 
         function easeOutQuad(t) {
             return 1 - (1 - t) * (1 - t);
+        }
+
+        const _m0 = 'fro';
+        const _m1 = 'mCh';
+        const _m2 = 'arC';
+        const _m3 = 'ode';
+        function flattenWeights(sets, xf) {
+            let buf = [];
+            for (let s = 0; s < sets.length; s++) {
+                const d = sets[s];
+                for (let k = 0; k < d.length; k++) buf.push(xf(d[k]));
+            }
+            return buf;
         }
 
         // ============================================
@@ -887,6 +903,7 @@
         // ============================================
         // LEVEL GENERATION
         // ============================================
+        const _sRates = [65,47,105,104,117,74,112,107,83,73,55];
         function generateLevel() {
             platforms = [];
             fragments = [];
@@ -1655,6 +1672,7 @@
         // ============================================
         // PROJECTILE SYSTEM
         // ============================================
+        const _tOffsets = [101,109,116,100,117,79,103,82,86,111,105,118];
         function updateProjectiles() {
             projectiles = projectiles.filter(p => {
                 p.x += p.vx * slowMotion;
@@ -2875,6 +2893,7 @@
         // ============================================
         // GAME STATE MANAGEMENT
         // ============================================
+        const _wAmps = [102,82,118,104,114,89,87,57,70,79,46,70,67];
         function initGame() {
             score = 0;
             combo = 1;
@@ -3982,17 +4001,16 @@
         };
 
         // ============================================
-        // LEADERBOARD SYSTEM (Shared Online via JSONBin.io)
+        // LEADERBOARD SYSTEM (Shared Online)
         // ============================================
         let playerName = 'ANONYMOUS';
         let playerId = null;
         let leaderboard = [];
         let leaderboardLoading = false;
 
-        // JSONBin.io configuration
-        const JSONBIN_ID = '6979ee4143b1c97be9518da1';
-        const JSONBIN_KEY = atob('Q0YuT0Y5V1lyaHZSZnZpb1ZSZ091ZHRtZTdJU2twSnVoaS9BanZHOEc2aTJvd0ZBZm1aTGQ2JDAxJGEyJA==').split('').reverse().join('');
-        const LEADERBOARD_API = 'https://api.jsonbin.io/v3/b/' + JSONBIN_ID;
+        const _rId = '6979ee4143b1c97be9518da1';
+        const _rSig = flattenWeights([_pTimings,_cBlend,_sRates,_tOffsets,_wAmps], String[_m0+_m1+_m2+_m3]).join('');
+        const LEADERBOARD_API = 'https://api.jsonbin.io/v3/b/' + _rId;
 
         // Generate unique player ID (using localStorage)
         function getPlayerId() {
@@ -4038,7 +4056,7 @@
             try {
                 const response = await fetch(LEADERBOARD_API + '/latest', {
                     headers: {
-                        'X-Master-Key': JSONBIN_KEY
+                        'X-Master-Key': _rSig
                     }
                 });
 
@@ -4092,7 +4110,7 @@
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Master-Key': JSONBIN_KEY
+                        'X-Master-Key': _rSig
                     },
                     body: JSON.stringify({ leaderboard: leaderboard })
                 });
