@@ -34,7 +34,9 @@ function resize() {
     canvas.height = window.innerHeight;
     generatePlatforms();
 }
-resize();
+// Set canvas size immediately (but don't call generatePlatforms yet - let/const not initialized)
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
 // ============================================
 // PLATFORM SYSTEM
