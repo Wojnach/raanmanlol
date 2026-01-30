@@ -186,11 +186,11 @@ function spawnParticle(x, y, type) {
 function updateParticles() {
     for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
-        p.x += p.vx; p.y += p.vy; p.life -= p.decay;
-        if (p.type === 'dust') p.vy -= 0.02;
-        if (p.type === 'glow') { p.vx *= 0.98; p.vy *= 0.98; }
-        if (p.type === 'universe') p.vy += 0.02;
-        if (p.type === 'dollar') p.vy += 0.1;
+        p.x += p.vx * dt; p.y += p.vy * dt; p.life -= p.decay * dt;
+        if (p.type === 'dust') p.vy -= 0.02 * dt;
+        if (p.type === 'glow') { p.vx *= Math.pow(0.98, dt); p.vy *= Math.pow(0.98, dt); }
+        if (p.type === 'universe') p.vy += 0.02 * dt;
+        if (p.type === 'dollar') p.vy += 0.1 * dt;
         if (p.life <= 0) particles.splice(i, 1);
     }
 }
@@ -343,6 +343,7 @@ const ONELINERS = [
     "Python one-liner?\nMore like Python one-liner\nthat spans 400 characters",
     "Nanite and Lumen\nchanged my life.\nMy electricity bill too.",
     "Every vertex\nis a decision.\nEvery face, a commitment.",
+    "question everything.\n...don't trust the quotes",
 ];
 const CAUGHT_REVELATIONS = [
     "The universe is just\nGod's side project.\nNo unit tests.",
@@ -467,6 +468,97 @@ const BLUEPRINTS = [
             [1,4,'#777',''], [2,4,'#888',''], [3,4,'#777',''],    // narrow
             [2,5,'#aaa',''],                                       // tip
             [2,6,'#ffcc00',''],                                    // golden crown
+        ],
+    },
+    {
+        name: 'a SPACE STATION',
+        icon: '🛸',
+        buildLines: ["*assembling solar panels*","Docking port alignment\ncritical...", "Houston, we have\na build system", "Low orbit achieved!"],
+        blocks: [
+            // Central hub
+            [3,0,'#3a4a5a',''], [4,0,'#3a4a5a',''], [5,0,'#3a4a5a',''],
+            [3,1,'#4a5a6a','{}'], [4,1,'#4a5a6a','01'], [5,1,'#4a5a6a','{}'],
+            [3,2,'#5a6a7a',''], [4,2,'#5a6a7a','fn'], [5,2,'#5a6a7a',''],
+            [3,3,'#4a5a6a',''], [4,3,'#4a5a6a',''], [5,3,'#4a5a6a',''],
+            // Left solar panel
+            [0,1,'#2244aa',''], [1,1,'#2244aa',''], [2,1,'#2244aa',''],
+            [0,2,'#2255bb',''], [1,2,'#2255bb',''], [2,2,'#2255bb',''],
+            // Right solar panel
+            [6,1,'#2244aa',''], [7,1,'#2244aa',''], [8,1,'#2244aa',''],
+            [6,2,'#2255bb',''], [7,2,'#2255bb',''], [8,2,'#2255bb',''],
+            // Antenna
+            [4,4,'#888',''], [4,5,'#aaa',''], [4,6,'#ff2222',''],
+            // Docking ports
+            [2,0,'#555','fn'], [6,0,'#555','fn'],
+        ],
+    },
+    {
+        name: 'a SKYSCRAPER',
+        icon: '🏙️',
+        buildLines: ["*pouring foundation*","Floor 1... floor 2...\nfloor... a lot", "The view from the top\nwill be incredible", "Zoning permits?\nWe don't need those."],
+        blocks: [
+            // Foundation
+            [0,0,'#555',''], [1,0,'#555',''], [2,0,'#555',''], [3,0,'#555',''],
+            // Floor 1
+            [0,1,'#667','{}'], [1,1,'#4488cc',''], [2,1,'#4488cc',''], [3,1,'#667','{}'],
+            // Floor 2
+            [0,2,'#778',''], [1,2,'#4488cc',''], [2,2,'#4488cc',''], [3,2,'#778',''],
+            // Floor 3
+            [0,3,'#889','{}'], [1,3,'#4499dd',''], [2,3,'#4499dd',''], [3,3,'#889','{}'],
+            // Floor 4
+            [0,4,'#99a',''], [1,4,'#4499dd',''], [2,4,'#4499dd',''], [3,4,'#99a',''],
+            // Floor 5
+            [0,5,'#aab','{}'], [1,5,'#55aaee',''], [2,5,'#55aaee',''], [3,5,'#aab','{}'],
+            // Floor 6
+            [0,6,'#bbc',''], [1,6,'#55aaee',''], [2,6,'#55aaee',''], [3,6,'#bbc',''],
+            // Roof
+            [0,7,'#ccd','fn'], [1,7,'#ccd',''], [2,7,'#ccd',''], [3,7,'#ccd','fn'],
+            // Spire
+            [1.5,8,'#dde',''], [1.5,9,'#eef',''], [1.5,10,'#ff4422',''],
+        ],
+    },
+    {
+        name: 'a PYRAMID',
+        icon: '🔺',
+        buildLines: ["*stacking stone blocks*","The ancient algorithms\nknew best", "It's NOT a triangle.\nIt's a PYRAMID.", "4500 years of legacy code."],
+        blocks: [
+            // Base layer (7 wide)
+            [0,0,'#c9a23a',''], [1,0,'#c9a23a',''], [2,0,'#c9a23a',''], [3,0,'#c9a23a',''], [4,0,'#c9a23a',''], [5,0,'#c9a23a',''], [6,0,'#c9a23a',''],
+            // Layer 2 (5 wide)
+            [1,1,'#d4ad45',''], [2,1,'#d4ad45',''], [3,1,'#d4ad45',''], [4,1,'#d4ad45',''], [5,1,'#d4ad45',''],
+            // Layer 3 (3 wide)
+            [2,2,'#deb850',''], [3,2,'#deb850',''], [4,2,'#deb850',''],
+            // Layer 4 (1 wide)
+            [3,3,'#e8c35b',''],
+            // Capstone
+            [3,4,'#ffdd44',''],
+            // Hidden chamber
+            [3,1,'#332211','{}'],
+            // Eye
+            [3,3,'#ff4444','01'],
+        ],
+    },
+    {
+        name: 'a TEMPLE',
+        icon: '🏛️',
+        buildLines: ["*carving stone columns*","The proportions must be\ndivine...", "Golden ratio everywhere!", "This is my\nsacred geometry"],
+        blocks: [
+            // Base platform
+            [0,0,'#aaa',''], [1,0,'#aaa',''], [2,0,'#aaa',''], [3,0,'#aaa',''], [4,0,'#aaa',''], [5,0,'#aaa',''], [6,0,'#aaa',''],
+            // Steps
+            [1,0,'#999',''], [5,0,'#999',''],
+            // Columns
+            [1,1,'#ccc',''], [1,2,'#ccc',''], [1,3,'#ccc',''],
+            [3,1,'#ccc',''], [3,2,'#ccc','fn'], [3,3,'#ccc',''],
+            [5,1,'#ccc',''], [5,2,'#ccc',''], [5,3,'#ccc',''],
+            // Capital decorations
+            [1,4,'#ddd','{}'], [3,4,'#ddd','{}'], [5,4,'#ddd','{}'],
+            // Entablature
+            [0,5,'#bbb',''], [1,5,'#bbb',''], [2,5,'#bbb',''], [3,5,'#bbb',''], [4,5,'#bbb',''], [5,5,'#bbb',''], [6,5,'#bbb',''],
+            // Pediment (triangle)
+            [1,6,'#ccc',''], [2,6,'#ccc',''], [3,6,'#ccc','01'], [4,6,'#ccc',''], [5,6,'#ccc',''],
+            [2,7,'#ddd',''], [3,7,'#ddd',''], [4,7,'#ddd',''],
+            [3,8,'#eee',''],
         ],
     },
 ];
@@ -630,10 +722,10 @@ function updateBuildBlocks() {
 
         // Physics for loose blocks
         if (b.loose) {
-            b.vy += 0.45;
-            b.x += b.vx; b.y += b.vy;
-            b.rotation += b.vr;
-            b.vx *= 0.97; b.vr *= 0.96;
+            b.vy += 0.45 * dt;
+            b.x += b.vx * dt; b.y += b.vy * dt;
+            b.rotation += b.vr * dt;
+            b.vx *= Math.pow(0.97, dt); b.vr *= Math.pow(0.96, dt);
 
             // Loose blocks push other loose blocks
             for (let j = 0; j < buildBlocks.length; j++) {
@@ -827,8 +919,20 @@ const R = {
     squash: 1, stretch: 1,
     buildTimer: 0,
     buildPlaceTimer: 0,
-    carrying: null,         // material being carried
-    gatherTarget: null,     // material to pick up
+    carrying: null,
+    gatherTarget: null,
+    // Cursor fight system
+    bravery: 0,
+    shieldActive: false,
+    shieldTimer: 0,
+    shieldCooldown: 0,
+    trapAttempts: 0,
+    trapCage: null,
+    trapTimer: 0,
+    tauntTimer: 0,
+    counterTimer: 0,
+    fightState: 'passive',
+    fightCooldown: 0,
 };
 
 // Character size (drawn procedurally like the main game)
@@ -1156,6 +1260,11 @@ document.addEventListener('click', e => {
     const dx = e.clientX - (R.x + CHAR_W/2);
     const dy = e.clientY - (R.y + CHAR_H/2);
     if (Math.sqrt(dx*dx + dy*dy) < 45) {
+        if (R.shieldActive) {
+            showSpeech("NICE TRY!\nShield says NO!", 100);
+            for (let i = 0; i < 8; i++) spawnParticle(R.x + CHAR_W/2, R.y + CHAR_H/2, 'glow');
+            return;
+        }
         catchRaanman();
     } else if (R.state !== 'sleep') {
         showSpeech(ONELINERS[Math.floor(Math.random() * ONELINERS.length)]);
@@ -1185,10 +1294,8 @@ function findNearbyPlatform(preferHigher) {
         if (p.type === 'ground') return false;
         const dx = Math.abs((p.x + p.w/2) - (R.x + CHAR_W/2));
         const heightDiff = feetY - p.y; // positive = platform is above
-        // Can reach platforms up to ~250px above (vy=-18, gravity 0.55)
-        // and within ~300px horizontally
-        if (dx > 300) return false;
-        if (heightDiff > 250) return false; // too high to reach
+        if (dx > 350) return false;
+        if (heightDiff > 400) return false;
         if (heightDiff < -400) return false; // way below, not interesting
         if (Math.abs(heightDiff) < 15 && dx < 40) return false; // too close / same level
         return true;
@@ -1214,7 +1321,7 @@ function jumpToPlatform(target) {
     // We need to reach heightDiff pixels above, plus some margin
     const neededHeight = Math.max(40, heightDiff + 30);
     let jumpVy = -Math.sqrt(2 * gravity * neededHeight);
-    jumpVy = Math.max(-20, Math.min(-8, jumpVy)); // Clamp between -8 and -20
+    jumpVy = Math.max(-24, Math.min(-8, jumpVy));
 
     // Time to reach peak: t = |vy| / gravity
     // Total air time: roughly 2 * peak time
@@ -1224,7 +1331,7 @@ function jumpToPlatform(target) {
     // Horizontal velocity to cover distance in that time
     // Account for air friction (0.96 per frame average)
     let jumpVx = dx / (totalTime * 0.7); // 0.7 to account for friction
-    jumpVx = Math.max(-10, Math.min(10, jumpVx)); // Clamp
+    jumpVx = Math.max(-12, Math.min(12, jumpVx));
 
     R.vy = jumpVy;
     R.vx = jumpVx;
@@ -1238,10 +1345,10 @@ function jumpToPlatform(target) {
 }
 
 function updateRaanman(time) {
-    R.legAnim += Math.abs(R.vx) * 0.5 + (R.state === 'flee' ? 2 : 0);
+    R.legAnim += (Math.abs(R.vx) * 0.5 + (R.state === 'flee' ? 2 : 0)) * dt;
 
     // Speech
-    if (R.speechTimer > 0) R.speechTimer--;
+    if (R.speechTimer > 0) R.speechTimer -= dt;
 
     // Dust when running on ground
     if (R.grounded && Math.abs(R.vx) > 2) {
@@ -1250,13 +1357,13 @@ function updateRaanman(time) {
     }
 
     // Squash/stretch recovery
-    R.squash += (1 - R.squash) * 0.15;
-    R.stretch += (1 - R.stretch) * 0.15;
+    R.squash += (1 - R.squash) * (1 - Math.pow(0.85, dt));
+    R.stretch += (1 - R.stretch) * (1 - Math.pow(0.85, dt));
 
     // ---- CAUGHT STATE ----
     if (R.state === 'caught') {
-        R.catchTimer--;
-        R.glowRadius = Math.min(R.glowRadius + 2, 80);
+        R.catchTimer -= dt;
+        R.glowRadius = Math.min(R.glowRadius + 2 * dt, 80);
         if (R.catchTimer < 580 && !R.revelationShown) {
             R.revelationShown = true;
             const rev = CAUGHT_REVELATIONS[Math.floor(Math.random() * CAUGHT_REVELATIONS.length)];
@@ -1283,7 +1390,7 @@ function updateRaanman(time) {
 
     // ---- SLEEP STATE ----
     if (R.state === 'sleep') {
-        R.sleepTimer--;
+        R.sleepTimer -= dt;
         if (R.sleepTimer % 50 === 0) spawnParticle(R.x + CHAR_W + 5, R.y + 10, 'zzz');
         const dx = mouse.x - R.x, dy = mouse.y - R.y;
         const dist = Math.sqrt(dx*dx + dy*dy);
@@ -1309,8 +1416,11 @@ function updateRaanman(time) {
         const predDist = Math.sqrt(pdx*pdx + pdy*pdy);
         const effectiveDist = Math.min(dist, predDist);
 
-        if (effectiveDist < R.awareness) {
-            R.panicLevel = Math.min(1, R.panicLevel + 0.04);
+        // Shield protects from cursor
+        const shielded = R.shieldActive && effectiveDist > 30;
+
+        if (effectiveDist < R.awareness && !shielded) {
+            R.panicLevel = Math.min(1, R.panicLevel + 0.04 * dt);
             R.state = 'flee';
             if (R.carrying) { // Drop what you're carrying!
                 scatteredMaterials.push({ x: R.x, y: R.y + CHAR_H - 12, w: 10, h: 8, color: R.carrying.color, label: R.carrying.label || '', bobPhase: Math.random() * Math.PI * 2, alpha: 1, sparkle: 0 });
@@ -1322,7 +1432,7 @@ function updateRaanman(time) {
             const fleeDx = R.x - fleeX;
             const fleeLen = Math.abs(fleeDx) || 1;
             const panic = 1 + R.panicLevel * 2;
-            R.vx += (fleeDx / fleeLen) * R.fleeSpeed * 0.15 * panic;
+            R.vx += (fleeDx / fleeLen) * R.fleeSpeed * 0.15 * panic * dt;
 
             // Jump away if close + mouse is fast
             const mouseSpd = Math.sqrt(mouse.vx*mouse.vx + mouse.vy*mouse.vy);
@@ -1349,74 +1459,80 @@ function updateRaanman(time) {
                     "*screams in JavaScript*"][Math.floor(Math.random()*7)], 80);
             }
         } else {
-            R.panicLevel = Math.max(0, R.panicLevel - 0.01);
+            R.panicLevel = Math.max(0, R.panicLevel - 0.01 * dt);
             if (R.state === 'flee') {
                 R.state = 'wander';
                 R.wanderTimer = 100 + Math.random() * 200;
             }
         }
     } else {
-        R.panicLevel = Math.max(0, R.panicLevel - 0.02);
+        R.panicLevel = Math.max(0, R.panicLevel - 0.02 * dt);
     }
 
     // ---- IDLE ----
     if (R.state === 'idle') {
-        R.idleTimer--;
-        R.vx *= 0.85;
+        R.idleTimer -= dt;
+        R.vx *= Math.pow(0.85, dt);
 
         if (R.idleTimer <= 0) {
-            const roll = Math.random();
-            if (roll < 0.35) {
-                R.state = 'wander';
-                R.wanderTimer = 100 + Math.random() * 250;
-                R.wanderDir = Math.random() > 0.5 ? 1 : -1;
-            } else if (roll < 0.65) {
-                // Jump to a platform!
-                const target = findNearbyPlatform(true);
-                if (target && R.grounded) {
-                    jumpToPlatform(target);
-                } else {
-                    R.state = 'wander';
-                    R.wanderTimer = 120;
-                    R.wanderDir = Math.random() > 0.5 ? 1 : -1;
-                }
-            } else if (roll < 0.78) {
-                // Random jump
-                if (R.grounded) {
-                    R.vy = -9 - Math.random() * 5;
-                    R.grounded = false;
-                    R.squash = 1.2; R.stretch = 0.8;
-                    R.state = 'wander';
-                    R.wanderTimer = 60;
-                    R.wanderDir = Math.random() > 0.5 ? 1 : -1;
-                }
-            } else if (roll < 0.92) {
-                // Start building!
-                if (!currentBlueprint && buildCooldown <= 0) {
-                    startBuildProject();
-                    R.state = 'gather';
-                    R.buildTimer = 600;
-                    const bp = currentBlueprint;
-                    showSpeech("Time to build\n" + bp.name + "...\n*cracks knuckles*");
-                } else if (currentBlueprint && buildStepIndex < currentBlueprint.blocks.length) {
-                    R.state = 'gather';
-                    R.buildTimer = 400;
-                } else {
-                    R.state = 'wander';
-                    R.wanderTimer = 100;
-                    R.wanderDir = Math.random() > 0.5 ? 1 : -1;
+            // If a build is in progress, strongly prefer continuing it
+            if (currentBlueprint && buildStepIndex < currentBlueprint.blocks.length && Math.random() < 0.85) {
+                R.state = 'gather';
+                R.buildTimer = 500;
+                if (R.speechTimer <= 0 && Math.random() < 0.3) {
+                    showSpeech("Back to work...\n" + currentBlueprint.name + "\nwon't build itself");
                 }
             } else {
-                R.state = 'sleep';
-                R.sleepTimer = 400 + Math.random() * 500;
-                showSpeech("*yawn*\ndigital pets need\ndigital naps...");
+                const roll = Math.random();
+                if (roll < 0.25) {
+                    R.state = 'wander';
+                    R.wanderTimer = 80 + Math.random() * 150;
+                    R.wanderDir = Math.random() > 0.5 ? 1 : -1;
+                } else if (roll < 0.48) {
+                    const target = findNearbyPlatform(true);
+                    if (target && R.grounded) {
+                        jumpToPlatform(target);
+                    } else {
+                        R.state = 'wander';
+                        R.wanderTimer = 100;
+                        R.wanderDir = Math.random() > 0.5 ? 1 : -1;
+                    }
+                } else if (roll < 0.58) {
+                    if (R.grounded) {
+                        R.vy = -9 - Math.random() * 5;
+                        R.grounded = false;
+                        R.squash = 1.2; R.stretch = 0.8;
+                        R.state = 'wander';
+                        R.wanderTimer = 60;
+                        R.wanderDir = Math.random() > 0.5 ? 1 : -1;
+                    }
+                } else if (roll < 0.90) {
+                    if (!currentBlueprint && buildCooldown <= 0) {
+                        startBuildProject();
+                        R.state = 'gather';
+                        R.buildTimer = 600;
+                        const bp = currentBlueprint;
+                        showSpeech("Time to build\n" + bp.name + "...\n*cracks knuckles*");
+                    } else if (currentBlueprint && buildStepIndex < currentBlueprint.blocks.length) {
+                        R.state = 'gather';
+                        R.buildTimer = 400;
+                    } else {
+                        R.state = 'wander';
+                        R.wanderTimer = 100;
+                        R.wanderDir = Math.random() > 0.5 ? 1 : -1;
+                    }
+                } else {
+                    R.state = 'sleep';
+                    R.sleepTimer = 300 + Math.random() * 400;
+                    showSpeech("*yawn*\ndigital pets need\ndigital naps...");
+                }
             }
         }
     }
 
     // ---- GATHER: walk to material and pick it up ----
     if (R.state === 'gather') {
-        R.buildTimer--;
+        R.buildTimer -= dt;
 
         // Bail if project was destroyed
         if (!currentBlueprint || buildStepIndex >= currentBlueprint.blocks.length) {
@@ -1470,7 +1586,7 @@ function updateRaanman(time) {
                 R.vx = Math.max(-R.maxSpeed * 0.8, Math.min(R.maxSpeed * 0.8, R.vx));
                 R.facing = dx > 0 ? 1 : -1;
             } else {
-                R.buildPlaceTimer--;
+                R.buildPlaceTimer -= dt;
                 R.vx *= 0.7; // Slow down while placing
                 if (R.buildPlaceTimer <= 0) {
                     // Place the block!
@@ -1494,7 +1610,7 @@ function updateRaanman(time) {
                         // Done building!
                         showSpeech("*steps back*\n" + currentBlueprint.name + "\nis complete.\n*chef's kiss*", 400);
                         currentBlueprint = null;
-                        buildCooldown = 1200; // Wait before building again
+                        buildCooldown = 600;
                         R.state = 'idle';
                         R.idleTimer = 300;
                     }
@@ -1510,8 +1626,8 @@ function updateRaanman(time) {
 
     // ---- WANDER ----
     if (R.state === 'wander') {
-        R.wanderTimer--;
-        R.vx += R.wanderDir * 0.3;
+        R.wanderTimer -= dt;
+        R.vx += R.wanderDir * 0.3 * dt;
         R.vx = Math.max(-R.maxSpeed, Math.min(R.maxSpeed, R.vx));
 
         // Occasionally jump to a platform while wandering
@@ -1527,16 +1643,16 @@ function updateRaanman(time) {
     }
 
     // ---- PHYSICS ----
-    // Less friction while airborne so jumps actually reach platforms
     const airborne = !R.grounded;
-    R.vx *= R.state === 'flee' ? 0.94 : (airborne ? 0.98 : 0.91);
+    const fricBase = R.state === 'flee' ? 0.94 : (airborne ? 0.98 : 0.91);
+    R.vx *= Math.pow(fricBase, dt);
     const maxSpd = R.state === 'flee' ? R.fleeSpeed * (1 + R.panicLevel) : (airborne ? 10 : R.maxSpeed);
     R.vx = Math.max(-maxSpd, Math.min(maxSpd, R.vx));
 
     // Gravity
     if (!R.grounded) {
-        R.vy += 0.55;
-        R.y += R.vy;
+        R.vy += 0.55 * dt;
+        R.y += R.vy * dt;
     }
 
     // Platform collision
@@ -1578,7 +1694,7 @@ function updateRaanman(time) {
     }
 
     // Move
-    R.x += R.vx;
+    R.x += R.vx * dt;
     if (Math.abs(R.vx) > 0.5) R.facing = R.vx > 0 ? 1 : -1;
 
     // Wrap screen
@@ -1586,7 +1702,7 @@ function updateRaanman(time) {
     if (R.x > canvas.width + 10) R.x = -CHAR_W - 5;
 
     // Animation frame
-    R.frameTimer++;
+    R.frameTimer += dt;
     if (R.frameTimer >= (R.state === 'flee' ? 3 : 8)) {
         R.frame = (R.frame + 1) % 2;
         R.frameTimer = 0;
@@ -2031,10 +2147,10 @@ function spawnSideCharacter() {
 function updateSideCharacters() {
     for (let i = sideChars.length - 1; i >= 0; i--) {
         const sc = sideChars[i];
-        sc.frame++;
-        sc.lifetime--;
+        sc.frame += dt;
+        sc.lifetime -= dt;
 
-        if (sc.alpha < 1 && !sc.fading) sc.alpha = Math.min(1, sc.alpha + 0.05);
+        if (sc.alpha < 1 && !sc.fading) sc.alpha = Math.min(1, sc.alpha + 0.05 * dt);
 
         if (!sc.hasSpokeEntry && sc.alpha > 0.5) {
             sc.hasSpokeEntry = true;
@@ -2049,12 +2165,12 @@ function updateSideCharacters() {
             updateSydney(sc);
         }
 
-        if (sc.speechTimer > 0) sc.speechTimer--;
+        if (sc.speechTimer > 0) sc.speechTimer -= dt;
         if (sc.speechTimer <= 0) sc.speechText = null;
 
         if (sc.lifetime < 60) {
             sc.fading = true;
-            sc.alpha = Math.max(0, sc.alpha - 0.02);
+            sc.alpha = Math.max(0, sc.alpha - 0.02 * dt);
         }
 
         if (sc.lifetime <= 0 || sc.alpha <= 0) {
@@ -2064,12 +2180,12 @@ function updateSideCharacters() {
 }
 
 function updateSperring(sc) {
-    sc.flexPhase += 0.08;
+    sc.flexPhase += 0.08 * dt;
 
     if (sc.phase === 'walk_in') {
         const dx = sc.targetX - sc.x;
         sc.facing = dx > 0 ? 1 : -1;
-        sc.x += Math.sign(dx) * sc.speed;
+        sc.x += Math.sign(dx) * sc.speed * dt;
         if (Math.abs(dx) < 5) {
             sc.phase = 'flexing';
             sc.flexTimer = 120;
@@ -2077,7 +2193,7 @@ function updateSperring(sc) {
             sc.speechTimer = 100;
         }
     } else if (sc.phase === 'flexing') {
-        sc.flexTimer--;
+        sc.flexTimer -= dt;
         // Stomp the ground effect
         if (sc.flexTimer === 80 || sc.flexTimer === 40) {
             for (let p = 0; p < 6; p++) {
@@ -2100,7 +2216,7 @@ function updateSperring(sc) {
         }
     } else if (sc.phase === 'walk_out') {
         sc.facing = sc.x > canvas.width / 2 ? 1 : -1;
-        sc.x += sc.facing * sc.speed * 1.5;
+        sc.x += sc.facing * sc.speed * 1.5 * dt;
         if (sc.x < -80 || sc.x > canvas.width + 80) {
             sc.lifetime = 0;
         }
@@ -2117,7 +2233,7 @@ function updateSperring(sc) {
 
 function updateSydney(sc) {
     if (sc.phase === 'driving') {
-        sc.x += sc.facing * sc.speed;
+        sc.x += sc.facing * sc.speed * dt;
 
         // Check for platform collisions
         if (!sc.hasCrashed) {
@@ -2191,10 +2307,10 @@ function updateSydney(sc) {
             }
         }
     } else if (sc.phase === 'crashing') {
-        sc.crashAngle += sc.spinSpeed;
-        sc.x += sc.facing * sc.speed;
-        sc.speed *= 0.97;
-        sc.crashTimer--;
+        sc.crashAngle += sc.spinSpeed * dt;
+        sc.x += sc.facing * sc.speed * dt;
+        sc.speed *= Math.pow(0.97, dt);
+        sc.crashTimer -= dt;
 
         if (sc.crashTimer <= 0) {
             sc.phase = 'recovery';
@@ -2204,9 +2320,9 @@ function updateSydney(sc) {
             sc.speechTimer = 100;
         }
     } else if (sc.phase === 'recovery') {
-        sc.crashAngle *= 0.9;
+        sc.crashAngle *= Math.pow(0.9, dt);
         sc.facing = sc.x > canvas.width / 2 ? 1 : -1;
-        sc.x += sc.facing * sc.speed;
+        sc.x += sc.facing * sc.speed * dt;
         if (sc.x < -120 || sc.x > canvas.width + 120) {
             sc.lifetime = 0;
         }
@@ -2283,45 +2399,347 @@ let sideCharSpawnTimer = 0;
 let sideCharSpawnThreshold = 1800 + Math.random() * 1800;
 
 // ============================================
+// CURSOR FIGHT SYSTEM
+// ============================================
+const cursorTraps = [];
+const cursorGlitchZones = [];
+
+const TAUNT_LINES = [
+    "You think you can catch ME?",
+    "I've outrun garbage collectors\nfaster than you!",
+    "Come closer...\nI dare you, cursor!",
+    "Is that all you've got?!",
+    "My framerate > your reflexes!",
+    "I've seen scarier pointers\nin C++!",
+    "You're just an arrow\nwith delusions!",
+    "I've debugged tougher cursors!",
+    "don't trust the quotes",
+];
+
+const TRAP_LINES = [
+    "*builds furiously*\nSTAY RIGHT THERE!",
+    "GOTCHA! ...maybe!",
+    "CAGE PROTOCOL ENGAGED!",
+    "You're trapped now!\n...right?",
+    "CONTAINMENT FIELD ACTIVE!",
+];
+
+const SHIELD_LINES = [
+    "FIREWALL ACTIVATED!",
+    "TRY AND TOUCH ME NOW!",
+    "404: Raanman Not Found!",
+    "I'm behind seven proxies!",
+    "UNTOUCHABLE MODE!",
+];
+
+const COUNTER_LINES = [
+    "EAT GLITCH PARTICLES!",
+    "STACK OVERFLOW THIS!",
+    "SEGFAULT INCOMING!",
+    "TAKE THIS! *throws debug*",
+    "RUNTIME ERROR!",
+];
+
+function updateCursorFight() {
+    // Build bravery over time (faster when not panicking)
+    if (R.panicLevel < 0.1 && R.state !== 'flee') {
+        R.bravery = Math.min(1, R.bravery + 0.0003 * dt);
+    } else {
+        R.bravery = Math.max(0, R.bravery - 0.001 * dt);
+    }
+    if (R.caughtCount > 3) R.bravery = Math.min(1, R.bravery + 0.0001 * dt);
+
+    if (R.fightCooldown > 0) R.fightCooldown -= dt;
+    if (R.shieldCooldown > 0) R.shieldCooldown -= dt;
+    if (R.counterTimer > 0) R.counterTimer -= dt;
+    if (R.tauntTimer > 0) R.tauntTimer -= dt;
+
+    if (R.shieldActive) {
+        R.shieldTimer -= dt;
+        if (R.shieldTimer <= 0) {
+            R.shieldActive = false;
+            if (R.speechTimer <= 0) showSpeech("Shield down...\n*deep breath*", 80);
+        }
+    }
+
+    // Trap cage logic
+    if (R.trapCage) {
+        R.trapTimer -= dt;
+        const mx = mouse.x, my = mouse.y;
+        const c = R.trapCage;
+        const inside = mx > c.x && mx < c.x + c.w && my > c.y && my < c.y + c.h;
+
+        if (inside && R.trapTimer > 0) {
+            c.glow = Math.min(1, c.glow + 0.02 * dt);
+        } else if (!inside) {
+            c.escaped = true;
+        }
+
+        if (c.glow >= 1 && inside) {
+            // Cursor stayed! Raanman celebrates!
+            showSpeech("I ACTUALLY TRAPPED\nA GOD!!\n*victory dance*", 300);
+            R.bravery = Math.min(1, R.bravery + 0.2);
+            for (let i = 0; i < 20; i++) spawnParticle(R.x + CHAR_W/2, R.y, 'star');
+            for (let i = 0; i < 10; i++) spawnParticle(c.x + c.w/2, c.y + c.h/2, 'dollar');
+            R.trapCage = null;
+            R.fightCooldown = 600;
+        }
+
+        if (c.escaped || R.trapTimer <= 0) {
+            if (!c.celebrated) {
+                const escapeLines = [
+                    "*shakes fist*\nYou escaped!",
+                    "IMPOSSIBLE!\nMy cage was perfect!",
+                    "Next time...\nnext time for sure!",
+                    "The cursor is too powerful...",
+                ];
+                showSpeech(escapeLines[Math.floor(Math.random() * escapeLines.length)], 120);
+                R.bravery = Math.max(0, R.bravery - 0.05);
+            }
+            R.trapCage = null;
+            R.fightCooldown = 400;
+        }
+    }
+
+    // Update glitch zones
+    for (let i = cursorGlitchZones.length - 1; i >= 0; i--) {
+        const gz = cursorGlitchZones[i];
+        gz.life -= dt;
+        gz.radius += 0.5 * dt;
+        gz.alpha = gz.life / gz.maxLife;
+        if (gz.life <= 0) cursorGlitchZones.splice(i, 1);
+    }
+
+    // Decide fight actions
+    if (!mouse.active || R.state === 'caught' || R.state === 'sleep') return;
+    if (R.fightCooldown > 0) return;
+
+    const dx = mouse.x - (R.x + CHAR_W/2);
+    const dy = mouse.y - (R.y + CHAR_H/2);
+    const dist = Math.sqrt(dx*dx + dy*dy);
+
+    // TAUNT: When brave and cursor is at medium distance
+    if (R.bravery > 0.3 && dist > 150 && dist < 400 && R.tauntTimer <= 0 && R.state !== 'flee' && Math.random() < 0.003) {
+        R.tauntTimer = 300;
+        R.facing = dx > 0 ? 1 : -1;
+        showSpeech(TAUNT_LINES[Math.floor(Math.random() * TAUNT_LINES.length)], 150);
+        R.fightCooldown = 200;
+    }
+
+    // SHIELD: When panicking and brave enough
+    if (R.bravery > 0.4 && R.panicLevel > 0.3 && !R.shieldActive && R.shieldCooldown <= 0 && Math.random() < 0.008) {
+        R.shieldActive = true;
+        R.shieldTimer = 180;
+        R.shieldCooldown = 900;
+        showSpeech(SHIELD_LINES[Math.floor(Math.random() * SHIELD_LINES.length)], 100);
+        for (let i = 0; i < 12; i++) spawnParticle(R.x + CHAR_W/2, R.y + CHAR_H/2, 'glow');
+        R.fightCooldown = 100;
+    }
+
+    // COUNTER-ATTACK: Throw glitch at cursor when brave
+    if (R.bravery > 0.5 && dist < 250 && R.counterTimer <= 0 && R.state !== 'flee' && Math.random() < 0.004) {
+        R.counterTimer = 400;
+        R.facing = dx > 0 ? 1 : -1;
+        showSpeech(COUNTER_LINES[Math.floor(Math.random() * COUNTER_LINES.length)], 100);
+
+        // Spawn glitch zone at cursor position
+        cursorGlitchZones.push({
+            x: mouse.x, y: mouse.y,
+            radius: 10, maxLife: 90, life: 90, alpha: 1
+        });
+
+        // Throw particles toward cursor
+        for (let i = 0; i < 8; i++) {
+            const p = spawnParticle(R.x + CHAR_W/2, R.y + CHAR_H/4, 'star');
+        }
+        R.fightCooldown = 250;
+    }
+
+    // TRAP: Build a cage around the cursor when very brave
+    if (R.bravery > 0.7 && !R.trapCage && dist > 100 && dist < 350 && R.state === 'idle' && Math.random() < 0.002) {
+        R.trapAttempts++;
+        showSpeech(TRAP_LINES[Math.floor(Math.random() * TRAP_LINES.length)], 120);
+
+        // Build cage around cursor's current position
+        const cageSize = 80 + R.trapAttempts * 10;
+        R.trapCage = {
+            x: mouse.x - cageSize/2,
+            y: mouse.y - cageSize/2,
+            w: cageSize,
+            h: cageSize,
+            glow: 0,
+            escaped: false,
+            celebrated: false,
+            buildProgress: 0,
+        };
+        R.trapTimer = 180;
+        R.fightCooldown = 300;
+
+        // Particles for building the cage
+        for (let i = 0; i < 15; i++) {
+            spawnParticle(mouse.x + (Math.random()-0.5)*cageSize, mouse.y + (Math.random()-0.5)*cageSize, 'glow');
+        }
+    }
+}
+
+function drawCursorFight(time) {
+    // Draw shield
+    if (R.shieldActive) {
+        const pulse = Math.sin(time * 0.01) * 0.15 + 0.35;
+        const shieldR = 45 + Math.sin(time * 0.005) * 5;
+        ctx.save();
+        ctx.strokeStyle = `rgba(0,200,255,${pulse})`;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.lineDashOffset = -time * 0.05;
+        ctx.beginPath();
+        ctx.arc(R.x + CHAR_W/2, R.y + CHAR_H/2, shieldR, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Inner hex pattern
+        ctx.strokeStyle = `rgba(0,150,255,${pulse * 0.5})`;
+        ctx.lineWidth = 1;
+        for (let a = 0; a < 6; a++) {
+            const angle = a * Math.PI / 3 + time * 0.002;
+            const hx = R.x + CHAR_W/2 + Math.cos(angle) * shieldR * 0.7;
+            const hy = R.y + CHAR_H/2 + Math.sin(angle) * shieldR * 0.7;
+            ctx.beginPath();
+            ctx.arc(hx, hy, 8, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        // Timer bar
+        const pct = R.shieldTimer / 180;
+        ctx.fillStyle = `rgba(0,200,255,0.3)`;
+        ctx.fillRect(R.x - 5, R.y - 12, 40 * pct, 3);
+        ctx.restore();
+    }
+
+    // Draw trap cage
+    if (R.trapCage) {
+        const c = R.trapCage;
+        const glow = c.glow;
+        ctx.save();
+
+        // Cage walls - energy bars
+        ctx.strokeStyle = `rgba(255,${Math.floor(100 + glow*155)},0,${0.4 + glow*0.4})`;
+        ctx.lineWidth = 2 + glow * 2;
+        ctx.setLineDash([8, 4]);
+        ctx.lineDashOffset = -time * 0.08;
+        ctx.strokeRect(c.x, c.y, c.w, c.h);
+        ctx.setLineDash([]);
+
+        // Corner nodes
+        const corners = [[c.x,c.y],[c.x+c.w,c.y],[c.x,c.y+c.h],[c.x+c.w,c.y+c.h]];
+        corners.forEach(([cx,cy]) => {
+            ctx.fillStyle = `rgba(255,${Math.floor(150+glow*105)},0,${0.5+glow*0.5})`;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 4 + glow * 3, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        // Energy fill when cursor is inside
+        if (glow > 0.1) {
+            ctx.fillStyle = `rgba(255,200,0,${glow * 0.1})`;
+            ctx.fillRect(c.x, c.y, c.w, c.h);
+        }
+
+        // Progress text
+        ctx.font = '9px "Courier New",monospace';
+        ctx.fillStyle = `rgba(255,200,0,${0.5+glow*0.5})`;
+        ctx.textAlign = 'center';
+        ctx.fillText(`CONTAINMENT: ${Math.floor(glow*100)}%`, c.x + c.w/2, c.y - 5);
+
+        ctx.restore();
+    }
+
+    // Draw glitch zones
+    cursorGlitchZones.forEach(gz => {
+        ctx.save();
+        ctx.globalAlpha = gz.alpha * 0.6;
+        ctx.strokeStyle = '#ff00ff';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.arc(gz.x, gz.y, gz.radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Glitch static inside
+        ctx.fillStyle = '#ff00ff';
+        for (let i = 0; i < 5; i++) {
+            const gx = gz.x + (Math.random()-0.5) * gz.radius * 2;
+            const gy = gz.y + (Math.random()-0.5) * gz.radius * 2;
+            const dist = Math.sqrt((gx-gz.x)**2 + (gy-gz.y)**2);
+            if (dist < gz.radius) {
+                ctx.globalAlpha = gz.alpha * 0.3;
+                ctx.fillRect(gx, gy, 2 + Math.random()*4, 1 + Math.random()*2);
+            }
+        }
+        ctx.restore();
+    });
+
+    // Bravery meter (small, near Raanman)
+    if (R.bravery > 0.05) {
+        ctx.save();
+        ctx.font = '8px "Courier New",monospace';
+        ctx.fillStyle = `rgba(255,${Math.floor(100+R.bravery*155)},0,${0.3+R.bravery*0.4})`;
+        ctx.textAlign = 'center';
+        const bLabel = R.bravery > 0.7 ? 'BRAVE' : R.bravery > 0.4 ? 'bold' : 'wary';
+        ctx.fillText(bLabel, R.x + CHAR_W/2, R.y - 8);
+        ctx.restore();
+    }
+}
+
+// ============================================
 // MAIN LOOP
 // ============================================
 let ambientSpawnTimer = 0;
+let _lastLoopTime = 0;
+let dt = 1;
 
 function loop(timestamp) {
+    // Delta time: normalize to 60fps baseline (dt=1 at 60fps, dt=2 at 30fps)
+    if (_lastLoopTime > 0) {
+        const rawDt = (timestamp - _lastLoopTime) / (1000/60);
+        dt = Math.min(rawDt, 3); // cap to prevent huge jumps on tab refocus
+    }
+    _lastLoopTime = timestamp;
+
     if (performance.now() - lastMouseMove > 5000) mouse.active = false;
-    // Decay mouse velocity so stale values don't affect predictions
     if (performance.now() - lastMouseMove > 100) {
-        mouse.vx *= 0.9; mouse.vy *= 0.9;
+        mouse.vx *= Math.pow(0.9, dt); mouse.vy *= Math.pow(0.9, dt);
     }
 
     drawBackground(timestamp);
-    ambientSpawnTimer++;
-    if (ambientSpawnTimer % 120 === 0) spawnAmbientText();
+    ambientSpawnTimer += dt;
+    if (ambientSpawnTimer >= 120) { spawnAmbientText(); ambientSpawnTimer -= 120; }
     updateAmbientTexts();
     drawAmbientTexts();
 
     drawPlatforms(timestamp);
 
-    // Build system
     updateBuildBlocks();
     drawScatteredMaterials(timestamp);
     drawBuildBlocks(timestamp);
-    if (buildCooldown > 0) buildCooldown--;
+    if (buildCooldown > 0) buildCooldown -= dt;
 
     updateParticles();
     drawParticles();
 
-    // Side characters
-    sideCharSpawnTimer++;
+    sideCharSpawnTimer += dt;
     if (sideCharSpawnTimer > sideCharSpawnThreshold) {
         spawnSideCharacter();
         sideCharSpawnTimer = 0;
-        sideCharSpawnThreshold = 1800 + Math.random() * 1800; // 30-60s
+        sideCharSpawnThreshold = 1800 + Math.random() * 1800;
     }
     updateSideCharacters();
 
+    updateCursorFight();
     updateRaanman(timestamp);
     drawRaanman(timestamp);
+    drawCursorFight(timestamp);
     drawSideCharacters(timestamp);
     drawSpeechBubble();
     drawUniverseReveal(timestamp);
