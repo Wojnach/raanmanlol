@@ -147,8 +147,8 @@ test('Main page: has safe-area-inset support', () => {
     return mainHTML.includes('safe-area-inset');
 });
 
-test('Main page: touch buttons are 72px', () => {
-    return mainHTML.includes('width: 72px');
+test('Main page: touch buttons are 88px', () => {
+    return mainHTML.includes('width: 88px');
 });
 
 test('3D game: touch buttons are 72px', () => {
@@ -159,8 +159,8 @@ test('Main page: overlay titles use clamp()', () => {
     return mainHTML.includes("font-size: clamp(");
 });
 
-test('Main page: overlay buttons have min-height: 48px', () => {
-    return mainHTML.includes('min-height: 48px');
+test('Main page: overlay buttons have min-height: 52px', () => {
+    return mainHTML.includes('min-height: 52px');
 });
 
 test('3D game: has @media (pointer: coarse)', () => {
