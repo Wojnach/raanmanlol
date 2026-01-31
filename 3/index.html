@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RAANMAN.EXE - The Memory Leak</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            overscroll-behavior: none;
+            background: #0a0a0f;
+            font-family: 'Courier New', monospace;
+        }
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            height: 100dvh;
+        }
+        canvas {
+            display: block;
+            touch-action: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #backBtn {
+            position: fixed;
+            top: env(safe-area-inset-top, 10px);
+            left: env(safe-area-inset-left, 10px);
+            z-index: 100;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 6px 14px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            text-decoration: none;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <a href="../" id="backBtn">← BACK</a>
+    <canvas id="gameCanvas"></canvas>
+    <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0)
+        || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    // ============================================
+    // GAME CONFIG
+    // ============================================
+    const WORLD_SIZE = 2000;
+    const ROUND_TIME = 90; // seconds
+    const LEVELS = [
+        { name: 'DESKTOP CLEANUP', objectCount: 60, minSize: 8, maxSize: 20, bigObjects: 5, theme: 'office' },
+        { name: 'SERVER ROOM', objectCount: 80, minSize: 10, maxSize: 30, bigObjects: 8, theme: 'server' },
+        { name: 'DATA CENTER', objectCount: 100, minSize: 12, maxSize: 40, bigObjects: 12, theme: 'datacenter' },
+        { name: 'THE CLOUD', objectCount: 120, minSize: 15, maxSize: 50, bigObjects: 15, theme: 'cloud' },
+        { name: 'THE INTERNET', objectCount: 150, minSize: 15, maxSize: 60, bigObjects: 20, theme: 'internet' },
+    ];
+
+    // Object types by size tier
+    const OBJECTS = {
+        tiny: [
+            { name: 'semicolon', color: '#888', shape: 'text', text: ';', baseSize: 8 },
+            { name: 'comma', color: '#888', shape: 'text', text: ',', baseSize: 7 },
+            { name: 'bracket', color: '#aaa', shape: 'text', text: '{}', baseSize: 9 },
+            { name: 'null', color: '#ff4444', shape: 'text', text: 'null', baseSize: 10 },
+            { name: 'bit', color: '#00ff88', shape: 'text', text: '01', baseSize: 8 },
+            { name: 'var', color: '#44aaff', shape: 'text', text: 'var', baseSize: 10 },
+            { name: 'bug', color: '#ff6600', shape: 'circle', baseSize: 10 },
+        ],
+        small: [
+            { name: 'TODO', color: '#ffff00', shape: 'rect', baseSize: 18 },
+            { name: 'coffee', color: '#8B4513', shape: 'circle', baseSize: 15 },
+            { name: 'mouse', color: '#ccc', shape: 'rect', baseSize: 16 },
+            { name: 'keyboard', color: '#999', shape: 'rect', baseSize: 20 },
+            { name: 'function', color: '#ff00ff', shape: 'text', text: 'fn()', baseSize: 16 },
+            { name: 'error', color: '#ff0044', shape: 'text', text: 'ERR', baseSize: 15 },
+            { name: 'cookie', color: '#dd8833', shape: 'circle', baseSize: 14 },
+        ],
+        medium: [
+            { name: 'monitor', color: '#334', shape: 'rect', baseSize: 30 },
+            { name: 'chair', color: '#444', shape: 'circle', baseSize: 28 },
+            { name: 'printer', color: '#666', shape: 'rect', baseSize: 32 },
+            { name: 'router', color: '#226', shape: 'rect', baseSize: 26 },
+            { name: 'laptop', color: '#555', shape: 'rect', baseSize: 28 },
+            { name: 'stack_overflow', color: '#f48024', shape: 'rect', baseSize: 35 },
+        ],
+        large: [
+            { name: 'desk', color: '#8B6914', shape: 'rect', baseSize: 45 },
+            { name: 'server_rack', color: '#2a2a4e', shape: 'rect', baseSize: 50 },
+            { name: 'database', color: '#336', shape: 'circle', baseSize: 48 },
+            { name: 'mainframe', color: '#1a1a2e', shape: 'rect', baseSize: 55 },
+        ],
+        huge: [
+            { name: 'building', color: '#333', shape: 'rect', baseSize: 80 },
+            { name: 'data_center', color: '#1a2a3a', shape: 'rect', baseSize: 90 },
+            { name: 'cloud_server', color: '#224', shape: 'circle', baseSize: 85 },
+        ]
+    };
+
+    // ============================================
+    // GAME STATE
+    // ============================================
+    let gameState = 'menu'; // menu, playing, levelComplete, gameOver
+    let currentLevel = 0;
+    let score = 0;
+    let totalScore = 0;
+    let timeLeft = ROUND_TIME;
+    let lastTime = 0;
+    let objects = [];
+    let particles = [];
+    let eatenCount = 0;
+    let totalObjects = 0;
+    let comboTimer = 0;
+    let combo = 1;
+    let screenShake = 0;
+    let highScore = parseInt(localStorage.getItem('raanman3_highscore') || '0');
+
+    // Hole (player)
+    const hole = {
+        x: WORLD_SIZE / 2,
+        y: WORLD_SIZE / 2,
+        radius: 25,
+        baseRadius: 25,
+        targetX: WORLD_SIZE / 2,
+        targetY: WORLD_SIZE / 2,
+        growthProgress: 0,
+        objectsEaten: 0,
+        suckPower: 0,
+    };
+
+    // Camera
+    const camera = { x: 0, y: 0 };
+
+    // ============================================
+    // RESIZE
+    // ============================================
+    function resize() {
+        const dpr = isMobile ? Math.min(window.devicePixelRatio || 1, 2) : 1;
+        canvas.width = window.innerWidth * dpr;
+        canvas.height = window.innerHeight * dpr;
+        canvas.style.width = window.innerWidth + 'px';
+        canvas.style.height = window.innerHeight + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // ============================================
+    // INPUT
+    // ============================================
+    let inputActive = false;
+    let inputX = 0, inputY = 0;
+
+    function screenToWorld(sx, sy) {
+        return {
+            x: sx + camera.x,
+            y: sy + camera.y
+        };
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+        if (gameState === 'menu') { startGame(); return; }
+        if (gameState === 'levelComplete') { nextLevel(); return; }
+        if (gameState === 'gameOver') { resetGame(); return; }
+        inputActive = true;
+        const w = screenToWorld(e.clientX, e.clientY);
+        hole.targetX = w.x;
+        hole.targetY = w.y;
+    });
+    canvas.addEventListener('mousemove', (e) => {
+        if (!inputActive || gameState !== 'playing') return;
+        const w = screenToWorld(e.clientX, e.clientY);
+        hole.targetX = w.x;
+        hole.targetY = w.y;
+    });
+    canvas.addEventListener('mouseup', () => { inputActive = false; });
+
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (gameState === 'menu') { startGame(); return; }
+        if (gameState === 'levelComplete') { nextLevel(); return; }
+        if (gameState === 'gameOver') { resetGame(); return; }
+        inputActive = true;
+        const t = e.touches[0];
+        const w = screenToWorld(t.clientX, t.clientY);
+        hole.targetX = w.x;
+        hole.targetY = w.y;
+    }, { passive: false });
+    canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (!inputActive || gameState !== 'playing') return;
+        const t = e.touches[0];
+        const w = screenToWorld(t.clientX, t.clientY);
+        hole.targetX = w.x;
+        hole.targetY = w.y;
+    }, { passive: false });
+    canvas.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        inputActive = false;
+    }, { passive: false });
+
+    // ============================================
+    // SPAWN OBJECTS
+    // ============================================
+    function spawnObjects() {
+        objects = [];
+        const level = LEVELS[currentLevel];
+        const margin = 100;
+
+        for (let i = 0; i < level.objectCount; i++) {
+            let tier;
+            const roll = Math.random();
+            if (roll < 0.35) tier = 'tiny';
+            else if (roll < 0.6) tier = 'small';
+            else if (roll < 0.8) tier = 'medium';
+            else if (roll < 0.95) tier = 'large';
+            else tier = 'huge';
+
+            const templates = OBJECTS[tier];
+            const template = templates[Math.floor(Math.random() * templates.length)];
+
+            const sizeVariation = 0.7 + Math.random() * 0.6;
+            const size = template.baseSize * sizeVariation * (1 + currentLevel * 0.1);
+
+            objects.push({
+                x: margin + Math.random() * (WORLD_SIZE - margin * 2),
+                y: margin + Math.random() * (WORLD_SIZE - margin * 2),
+                size: size,
+                originalSize: size,
+                template: template,
+                beingEaten: false,
+                eatProgress: 0,
+                rotation: Math.random() * Math.PI * 2,
+                bobOffset: Math.random() * Math.PI * 2,
+                vx: 0,
+                vy: 0,
+            });
+        }
+
+        // Sort by size so small objects render on top
+        objects.sort((a, b) => b.size - a.size);
+        totalObjects = objects.length;
+    }
+
+    // ============================================
+    // PARTICLES
+    // ============================================
+    function spawnParticles(x, y, color, count, speed) {
+        for (let i = 0; i < count; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const spd = (speed || 3) * (0.5 + Math.random());
+            particles.push({
+                x: x,
+                y: y,
+                vx: Math.cos(angle) * spd,
+                vy: Math.sin(angle) * spd,
+                life: 1,
+                decay: 0.02 + Math.random() * 0.03,
+                size: 2 + Math.random() * 4,
+                color: color,
+            });
+        }
+    }
+
+    function updateParticles(dt) {
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vx *= 0.95;
+            p.vy *= 0.95;
+            p.life -= p.decay;
+            if (p.life <= 0) particles.splice(i, 1);
+        }
+        // Cap particles on mobile
+        const maxParticles = isMobile ? 200 : 500;
+        if (particles.length > maxParticles) {
+            particles.splice(0, particles.length - maxParticles);
+        }
+    }
+
+    // ============================================
+    // GAME LOGIC
+    // ============================================
+    function startGame() {
+        gameState = 'playing';
+        currentLevel = 0;
+        score = 0;
+        totalScore = 0;
+        startLevel();
+    }
+
+    function startLevel() {
+        timeLeft = ROUND_TIME;
+        eatenCount = 0;
+        combo = 1;
+        comboTimer = 0;
+        hole.x = WORLD_SIZE / 2;
+        hole.y = WORLD_SIZE / 2;
+        hole.targetX = WORLD_SIZE / 2;
+        hole.targetY = WORLD_SIZE / 2;
+        hole.radius = 25 + currentLevel * 5;
+        hole.baseRadius = hole.radius;
+        hole.objectsEaten = 0;
+        hole.suckPower = 0;
+        particles = [];
+        screenShake = 0;
+        spawnObjects();
+    }
+
+    function nextLevel() {
+        currentLevel++;
+        if (currentLevel >= LEVELS.length) {
+            // Beat all levels
+            gameState = 'gameOver';
+            return;
+        }
+        startLevel();
+        gameState = 'playing';
+    }
+
+    function resetGame() {
+        gameState = 'menu';
+        currentLevel = 0;
+        score = 0;
+        totalScore = 0;
+    }
+
+    function update(dt) {
+        if (gameState !== 'playing') return;
+
+        // Timer
+        timeLeft -= dt;
+        if (timeLeft <= 0) {
+            timeLeft = 0;
+            // Level complete if eaten enough, otherwise game over
+            const eatPercent = eatenCount / totalObjects;
+            if (eatPercent >= 0.5) {
+                gameState = 'levelComplete';
+                totalScore += score;
+                if (totalScore > highScore) {
+                    highScore = totalScore;
+                    localStorage.setItem('raanman3_highscore', highScore.toString());
+                }
+            } else {
+                gameState = 'gameOver';
+                totalScore += score;
+                if (totalScore > highScore) {
+                    highScore = totalScore;
+                    localStorage.setItem('raanman3_highscore', highScore.toString());
+                }
+            }
+            return;
+        }
+
+        // Move hole toward target
+        const dx = hole.targetX - hole.x;
+        const dy = hole.targetY - hole.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const speed = 5 + hole.radius * 0.05;
+        if (dist > 2) {
+            hole.x += (dx / dist) * Math.min(speed, dist * 0.15);
+            hole.y += (dy / dist) * Math.min(speed, dist * 0.15);
+        }
+
+        // Clamp to world
+        hole.x = Math.max(hole.radius, Math.min(WORLD_SIZE - hole.radius, hole.x));
+        hole.y = Math.max(hole.radius, Math.min(WORLD_SIZE - hole.radius, hole.y));
+
+        // Combo timer
+        if (comboTimer > 0) {
+            comboTimer -= dt;
+            if (comboTimer <= 0) {
+                combo = 1;
+            }
+        }
+
+        // Suck power visual
+        hole.suckPower *= 0.95;
+
+        // Check object interactions
+        let ateThisFrame = false;
+        for (let i = objects.length - 1; i >= 0; i--) {
+            const obj = objects[i];
+            const odx = hole.x - obj.x;
+            const ody = hole.y - obj.y;
+            const oDist = Math.sqrt(odx * odx + ody * ody);
+            const suckRange = hole.radius * 2.5;
+            const eatRange = hole.radius * 0.8;
+
+            // Can only eat objects smaller than the hole
+            const canEat = obj.size < hole.radius * 1.2;
+
+            if (canEat && oDist < suckRange) {
+                // Pull object toward hole
+                const pullStrength = 1 - (oDist / suckRange);
+                const pullForce = pullStrength * 4;
+                obj.vx += (odx / oDist) * pullForce;
+                obj.vy += (ody / oDist) * pullForce;
+
+                // Shrink as it gets closer
+                if (oDist < suckRange * 0.5) {
+                    obj.size = obj.originalSize * (oDist / (suckRange * 0.5));
+                }
+
+                // Eat it
+                if (oDist < eatRange || obj.size < 3) {
+                    // Score based on original size
+                    const points = Math.ceil(obj.originalSize * 10 * combo);
+                    score += points;
+                    eatenCount++;
+
+                    // Combo
+                    comboTimer = 2;
+                    combo = Math.min(combo + 0.5, 10);
+
+                    // Grow the hole
+                    hole.radius += obj.originalSize * 0.04;
+                    hole.suckPower = 1;
+
+                    // Effects
+                    spawnParticles(obj.x, obj.y, obj.template.color, isMobile ? 4 : 8, 2);
+                    screenShake = Math.min(5, obj.originalSize * 0.1);
+                    ateThisFrame = true;
+
+                    objects.splice(i, 1);
+                    continue;
+                }
+            } else if (!canEat && oDist < obj.size * 0.6 + hole.radius * 0.5) {
+                // Bump away from objects too big to eat
+                const pushForce = 3;
+                const pushDx = hole.x - obj.x;
+                const pushDy = hole.y - obj.y;
+                const pushDist = Math.sqrt(pushDx * pushDx + pushDy * pushDy) || 1;
+                hole.x += (pushDx / pushDist) * pushForce;
+                hole.y += (pushDy / pushDist) * pushForce;
+            }
+
+            // Apply velocity and friction
+            obj.x += obj.vx;
+            obj.y += obj.vy;
+            obj.vx *= 0.85;
+            obj.vy *= 0.85;
+
+            // Keep in bounds
+            obj.x = Math.max(obj.size, Math.min(WORLD_SIZE - obj.size, obj.x));
+            obj.y = Math.max(obj.size, Math.min(WORLD_SIZE - obj.size, obj.y));
+        }
+
+        // Screen shake decay
+        screenShake *= 0.9;
+
+        // Update particles
+        updateParticles(dt);
+
+        // Update camera
+        camera.x = hole.x - window.innerWidth / 2;
+        camera.y = hole.y - window.innerHeight / 2;
+        // Clamp camera
+        camera.x = Math.max(0, Math.min(WORLD_SIZE - window.innerWidth, camera.x));
+        camera.y = Math.max(0, Math.min(WORLD_SIZE - window.innerHeight, camera.y));
+    }
+
+    // ============================================
+    // RENDERING
+    // ============================================
+    function drawGrid() {
+        const gridSize = 80;
+        const startX = Math.floor(camera.x / gridSize) * gridSize;
+        const startY = Math.floor(camera.y / gridSize) * gridSize;
+
+        ctx.strokeStyle = 'rgba(0, 255, 136, 0.07)';
+        ctx.lineWidth = 1;
+
+        for (let x = startX; x < camera.x + window.innerWidth + gridSize; x += gridSize) {
+            ctx.beginPath();
+            ctx.moveTo(x - camera.x, 0);
+            ctx.lineTo(x - camera.x, window.innerHeight);
+            ctx.stroke();
+        }
+        for (let y = startY; y < camera.y + window.innerHeight + gridSize; y += gridSize) {
+            ctx.beginPath();
+            ctx.moveTo(0, y - camera.y);
+            ctx.lineTo(window.innerWidth, y - camera.y);
+            ctx.stroke();
+        }
+    }
+
+    function drawWorldBorder() {
+        ctx.strokeStyle = '#ff0044';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([10, 10]);
+        ctx.strokeRect(-camera.x, -camera.y, WORLD_SIZE, WORLD_SIZE);
+        ctx.setLineDash([]);
+
+        // Danger zone shading outside world
+        ctx.fillStyle = 'rgba(255, 0, 68, 0.05)';
+        // Top
+        ctx.fillRect(0, 0, window.innerWidth, Math.max(0, -camera.y));
+        // Bottom
+        const bottomY = WORLD_SIZE - camera.y;
+        if (bottomY < window.innerHeight) {
+            ctx.fillRect(0, bottomY, window.innerWidth, window.innerHeight - bottomY);
+        }
+        // Left
+        ctx.fillRect(0, 0, Math.max(0, -camera.x), window.innerHeight);
+        // Right
+        const rightX = WORLD_SIZE - camera.x;
+        if (rightX < window.innerWidth) {
+            ctx.fillRect(rightX, 0, window.innerWidth - rightX, window.innerHeight);
+        }
+    }
+
+    function drawObject(obj, time) {
+        const sx = obj.x - camera.x;
+        const sy = obj.y - camera.y;
+
+        // Cull off-screen
+        if (sx < -obj.size * 2 || sx > window.innerWidth + obj.size * 2 ||
+            sy < -obj.size * 2 || sy > window.innerHeight + obj.size * 2) return;
+
+        const bob = Math.sin(time * 2 + obj.bobOffset) * 2;
+        const canEat = obj.size < hole.radius * 1.2;
+
+        ctx.save();
+        ctx.translate(sx, sy + bob);
+
+        // Glow for eatable objects
+        if (canEat) {
+            ctx.shadowColor = obj.template.color;
+            ctx.shadowBlur = 8;
+        }
+
+        // Draw based on shape
+        if (obj.template.shape === 'text') {
+            ctx.font = `bold ${obj.size * 1.5}px Courier New`;
+            ctx.fillStyle = canEat ? obj.template.color : 'rgba(100,100,100,0.5)';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(obj.template.text || obj.template.name, 0, 0);
+        } else if (obj.template.shape === 'circle') {
+            ctx.beginPath();
+            ctx.arc(0, 0, obj.size * 0.5, 0, Math.PI * 2);
+            ctx.fillStyle = canEat ? obj.template.color : darken(obj.template.color, 0.3);
+            ctx.fill();
+            if (canEat) {
+                ctx.strokeStyle = lighten(obj.template.color, 0.3);
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+        } else {
+            // rect
+            const w = obj.size * 1.2;
+            const h = obj.size * 0.8;
+            ctx.fillStyle = canEat ? obj.template.color : darken(obj.template.color, 0.3);
+            ctx.fillRect(-w/2, -h/2, w, h);
+            if (canEat) {
+                ctx.strokeStyle = lighten(obj.template.color, 0.3);
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(-w/2, -h/2, w, h);
+            }
+
+            // Label on medium+ objects
+            if (obj.originalSize >= 25) {
+                ctx.font = `bold ${Math.max(8, obj.size * 0.25)}px Courier New`;
+                ctx.fillStyle = canEat ? '#fff' : '#555';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const label = obj.template.name.replace(/_/g, ' ').toUpperCase();
+                ctx.fillText(label, 0, 0);
+            }
+        }
+
+        // Too-big indicator
+        if (!canEat) {
+            ctx.font = `bold ${Math.max(10, obj.size * 0.3)}px Courier New`;
+            ctx.fillStyle = 'rgba(255, 0, 68, 0.6)';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('✕', 0, -obj.size * 0.5 - 8);
+        }
+
+        ctx.restore();
+    }
+
+    function drawHole(time) {
+        const sx = hole.x - camera.x;
+        const sy = hole.y - camera.y;
+
+        ctx.save();
+
+        // Screen shake offset
+        const shakeX = (Math.random() - 0.5) * screenShake;
+        const shakeY = (Math.random() - 0.5) * screenShake;
+
+        // Outer suck field
+        const suckRadius = hole.radius * 2.5;
+        const suckGrad = ctx.createRadialGradient(
+            sx + shakeX, sy + shakeY, hole.radius * 0.3,
+            sx + shakeX, sy + shakeY, suckRadius
+        );
+        suckGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+        suckGrad.addColorStop(0.5, 'rgba(255, 0, 255, 0.03)');
+        suckGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = suckGrad;
+        ctx.beginPath();
+        ctx.arc(sx + shakeX, sy + shakeY, suckRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Swirl effect
+        const swirlCount = 6;
+        for (let i = 0; i < swirlCount; i++) {
+            const angle = (time * 3) + (i / swirlCount) * Math.PI * 2;
+            const swirlR = hole.radius * (0.6 + Math.sin(time * 2 + i) * 0.2);
+            const swirlX = sx + Math.cos(angle) * swirlR + shakeX;
+            const swirlY = sy + Math.sin(angle) * swirlR + shakeY;
+
+            ctx.beginPath();
+            ctx.arc(swirlX, swirlY, 3 + hole.suckPower * 3, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 0, 255, ${0.3 + hole.suckPower * 0.5})`;
+            ctx.fill();
+        }
+
+        // Inner swirl ring
+        ctx.beginPath();
+        ctx.arc(sx + shakeX, sy + shakeY, hole.radius * 0.7, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(80, 0, 120, ${0.3 + Math.sin(time * 4) * 0.1})`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Main hole - dark center with purple edge
+        const holeGrad = ctx.createRadialGradient(
+            sx + shakeX, sy + shakeY, 0,
+            sx + shakeX, sy + shakeY, hole.radius
+        );
+        holeGrad.addColorStop(0, '#000000');
+        holeGrad.addColorStop(0.6, '#0a001a');
+        holeGrad.addColorStop(0.85, '#1a0033');
+        holeGrad.addColorStop(0.95, 'rgba(255, 0, 255, 0.4)');
+        holeGrad.addColorStop(1, 'rgba(255, 0, 255, 0)');
+
+        ctx.beginPath();
+        ctx.arc(sx + shakeX, sy + shakeY, hole.radius, 0, Math.PI * 2);
+        ctx.fillStyle = holeGrad;
+        ctx.fill();
+
+        // Pulsing edge glow
+        const pulseSize = hole.radius + Math.sin(time * 5) * 2 + hole.suckPower * 5;
+        ctx.beginPath();
+        ctx.arc(sx + shakeX, sy + shakeY, pulseSize, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(255, 0, 255, ${0.4 + hole.suckPower * 0.4})`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Size indicator text
+        ctx.font = 'bold 12px Courier New';
+        ctx.fillStyle = 'rgba(255, 0, 255, 0.6)';
+        ctx.textAlign = 'center';
+        ctx.fillText(Math.floor(hole.radius), sx + shakeX, sy + shakeY + hole.radius + 18);
+
+        ctx.restore();
+    }
+
+    function drawParticles() {
+        for (const p of particles) {
+            const sx = p.x - camera.x;
+            const sy = p.y - camera.y;
+            ctx.globalAlpha = p.life;
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(sx, sy, p.size * p.life, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+    }
+
+    function drawHUD() {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        const level = LEVELS[currentLevel];
+
+        // Top bar background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(0, 0, w, 50);
+        ctx.fillStyle = 'rgba(0, 255, 136, 0.1)';
+        ctx.fillRect(0, 49, w, 1);
+
+        // Level name
+        ctx.font = 'bold 14px Courier New';
+        ctx.fillStyle = '#00ff88';
+        ctx.textAlign = 'left';
+        ctx.fillText(`LVL ${currentLevel + 1}: ${level.name}`, 10, 20);
+
+        // Score
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#fff';
+        ctx.fillText(`SCORE: ${score.toLocaleString()}`, w / 2, 20);
+
+        // Combo
+        if (combo > 1) {
+            ctx.fillStyle = '#ff00ff';
+            ctx.font = 'bold 12px Courier New';
+            ctx.fillText(`x${combo.toFixed(1)} COMBO`, w / 2, 38);
+        }
+
+        // Timer
+        ctx.textAlign = 'right';
+        const timeColor = timeLeft < 15 ? '#ff0044' : timeLeft < 30 ? '#ffaa00' : '#00ff88';
+        ctx.fillStyle = timeColor;
+        ctx.font = 'bold 16px Courier New';
+        ctx.fillText(`${Math.ceil(timeLeft)}s`, w - 10, 20);
+
+        // Progress bar
+        const eatPercent = eatenCount / totalObjects;
+        const barW = Math.min(200, w * 0.3);
+        const barX = 10;
+        const barY = 35;
+        const barH = 8;
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.fillRect(barX, barY, barW, barH);
+
+        // 50% threshold marker
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.fillRect(barX + barW * 0.5 - 1, barY - 2, 2, barH + 4);
+
+        // Fill
+        const barColor = eatPercent >= 0.5 ? '#00ff88' : '#ffaa00';
+        ctx.fillStyle = barColor;
+        ctx.fillRect(barX, barY, barW * eatPercent, barH);
+
+        // Eaten count
+        ctx.font = '10px Courier New';
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#888';
+        ctx.fillText(`${eatenCount}/${totalObjects} consumed`, barX + barW + 8, barY + 7);
+
+        // Size indicator bottom
+        ctx.font = '11px Courier New';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(255, 0, 255, 0.5)';
+        ctx.fillText(`LEAK SIZE: ${Math.floor(hole.radius)}`, w / 2, h - 15);
+    }
+
+    function drawMenu() {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        const time = Date.now() / 1000;
+
+        // Background grid
+        drawGrid();
+
+        // Title
+        ctx.save();
+        ctx.textAlign = 'center';
+
+        // Glitch title
+        ctx.font = `bold ${Math.min(48, w * 0.08)}px Courier New`;
+        ctx.fillStyle = '#ff00ff';
+        ctx.shadowColor = '#ff00ff';
+        ctx.shadowBlur = 20;
+        ctx.fillText('RAANMAN.EXE', w / 2, h * 0.25);
+        ctx.shadowBlur = 0;
+
+        ctx.font = `bold ${Math.min(28, w * 0.05)}px Courier New`;
+        ctx.fillStyle = '#00ff88';
+        ctx.fillText('THE MEMORY LEAK', w / 2, h * 0.25 + 40);
+
+        // Animated hole preview
+        const previewR = 30 + Math.sin(time * 2) * 5;
+        const holeGrad = ctx.createRadialGradient(w/2, h * 0.5, 0, w/2, h * 0.5, previewR);
+        holeGrad.addColorStop(0, '#000');
+        holeGrad.addColorStop(0.7, '#1a0033');
+        holeGrad.addColorStop(1, 'rgba(255,0,255,0)');
+        ctx.beginPath();
+        ctx.arc(w/2, h * 0.5, previewR, 0, Math.PI * 2);
+        ctx.fillStyle = holeGrad;
+        ctx.fill();
+
+        // Swirling dots
+        for (let i = 0; i < 8; i++) {
+            const a = time * 3 + i * Math.PI / 4;
+            const r = previewR * 0.8;
+            ctx.beginPath();
+            ctx.arc(w/2 + Math.cos(a) * r, h * 0.5 + Math.sin(a) * r, 2, 0, Math.PI * 2);
+            ctx.fillStyle = '#ff00ff';
+            ctx.fill();
+        }
+
+        // Instructions
+        ctx.font = '14px Courier New';
+        ctx.fillStyle = '#888';
+        ctx.fillText(isMobile ? 'DRAG TO MOVE • EAT EVERYTHING' : 'MOUSE TO MOVE • DEVOUR ALL CODE', w / 2, h * 0.65);
+        ctx.fillText('CONSUME OBJECTS SMALLER THAN YOU TO GROW', w / 2, h * 0.65 + 22);
+
+        // High score
+        if (highScore > 0) {
+            ctx.fillStyle = '#ffaa00';
+            ctx.fillText(`HIGH SCORE: ${highScore.toLocaleString()}`, w / 2, h * 0.75);
+        }
+
+        // Start prompt
+        const blink = Math.sin(time * 4) > 0;
+        if (blink) {
+            ctx.font = `bold ${Math.min(20, w * 0.04)}px Courier New`;
+            ctx.fillStyle = '#00ff88';
+            ctx.fillText(isMobile ? 'TAP TO START' : 'CLICK TO START', w / 2, h * 0.85);
+        }
+
+        // Back link note
+        ctx.font = '11px Courier New';
+        ctx.fillStyle = '#444';
+        ctx.fillText('raanman.lol/3', w / 2, h * 0.93);
+
+        ctx.restore();
+    }
+
+    function drawLevelComplete() {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        const time = Date.now() / 1000;
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.textAlign = 'center';
+
+        ctx.font = `bold ${Math.min(36, w * 0.06)}px Courier New`;
+        ctx.fillStyle = '#00ff88';
+        ctx.shadowColor = '#00ff88';
+        ctx.shadowBlur = 15;
+        ctx.fillText('MEMORY CONSUMED', w / 2, h * 0.25);
+        ctx.shadowBlur = 0;
+
+        ctx.font = '16px Courier New';
+        ctx.fillStyle = '#fff';
+        ctx.fillText(`LEVEL ${currentLevel + 1} COMPLETE`, w / 2, h * 0.35);
+
+        ctx.font = '14px Courier New';
+        ctx.fillStyle = '#888';
+        ctx.fillText(`Objects consumed: ${eatenCount}/${totalObjects}`, w / 2, h * 0.45);
+        ctx.fillText(`Level score: ${score.toLocaleString()}`, w / 2, h * 0.5);
+        ctx.fillText(`Total score: ${(totalScore).toLocaleString()}`, w / 2, h * 0.55);
+        ctx.fillText(`Final size: ${Math.floor(hole.radius)}`, w / 2, h * 0.6);
+
+        const blink = Math.sin(time * 4) > 0;
+        if (blink) {
+            ctx.font = 'bold 16px Courier New';
+            ctx.fillStyle = '#ff00ff';
+            if (currentLevel + 1 >= LEVELS.length) {
+                ctx.fillText('TAP FOR FINAL SCORE', w / 2, h * 0.75);
+            } else {
+                ctx.fillText(isMobile ? 'TAP FOR NEXT LEVEL' : 'CLICK FOR NEXT LEVEL', w / 2, h * 0.75);
+            }
+        }
+    }
+
+    function drawGameOver() {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        const time = Date.now() / 1000;
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.textAlign = 'center';
+
+        // Title
+        ctx.font = `bold ${Math.min(36, w * 0.06)}px Courier New`;
+        ctx.fillStyle = '#ff0044';
+        ctx.shadowColor = '#ff0044';
+        ctx.shadowBlur = 15;
+        const title = eatenCount / totalObjects >= 0.5 ? 'OUT OF MEMORY' : 'GARBAGE COLLECTED';
+        ctx.fillText(title, w / 2, h * 0.2);
+        ctx.shadowBlur = 0;
+
+        // Subtitle
+        ctx.font = '14px Courier New';
+        ctx.fillStyle = '#888';
+        const subtitle = eatenCount / totalObjects >= 0.5
+            ? 'You consumed all available memory!'
+            : 'Not enough objects consumed in time...';
+        ctx.fillText(subtitle, w / 2, h * 0.28);
+
+        // Stats
+        ctx.font = '14px Courier New';
+        ctx.fillStyle = '#00ff88';
+        ctx.fillText(`TOTAL SCORE: ${totalScore.toLocaleString()}`, w / 2, h * 0.4);
+
+        ctx.fillStyle = '#ffaa00';
+        ctx.fillText(`HIGH SCORE: ${highScore.toLocaleString()}`, w / 2, h * 0.46);
+
+        ctx.fillStyle = '#888';
+        ctx.fillText(`Level reached: ${currentLevel + 1}/${LEVELS.length}`, w / 2, h * 0.54);
+        ctx.fillText(`Objects consumed: ${eatenCount}`, w / 2, h * 0.6);
+        ctx.fillText(`Final leak size: ${Math.floor(hole.radius)}`, w / 2, h * 0.66);
+
+        if (totalScore >= highScore && totalScore > 0) {
+            ctx.fillStyle = '#ffff00';
+            ctx.font = 'bold 16px Courier New';
+            ctx.fillText('★ NEW HIGH SCORE ★', w / 2, h * 0.74);
+        }
+
+        const blink = Math.sin(time * 4) > 0;
+        if (blink) {
+            ctx.font = 'bold 16px Courier New';
+            ctx.fillStyle = '#00ff88';
+            ctx.fillText(isMobile ? 'TAP TO RETRY' : 'CLICK TO RETRY', w / 2, h * 0.85);
+        }
+    }
+
+    // ============================================
+    // COLOR HELPERS
+    // ============================================
+    function darken(hex, amount) {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `rgb(${Math.floor(r * amount)}, ${Math.floor(g * amount)}, ${Math.floor(b * amount)})`;
+    }
+
+    function lighten(hex, amount) {
+        const r = Math.min(255, parseInt(hex.slice(1, 3), 16) + 255 * amount);
+        const g = Math.min(255, parseInt(hex.slice(3, 5), 16) + 255 * amount);
+        const b = Math.min(255, parseInt(hex.slice(5, 7), 16) + 255 * amount);
+        return `rgb(${Math.floor(r)}, ${Math.floor(g)}, ${Math.floor(b)})`;
+    }
+
+    // ============================================
+    // MAIN LOOP
+    // ============================================
+    function gameLoop(timestamp) {
+        const dt = lastTime ? Math.min((timestamp - lastTime) / 1000, 0.05) : 0.016;
+        lastTime = timestamp;
+
+        const time = timestamp / 1000;
+
+        // Clear
+        ctx.fillStyle = '#0a0a0f';
+        ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+
+        if (gameState === 'menu') {
+            drawMenu();
+        } else if (gameState === 'playing') {
+            update(dt);
+
+            // Apply screen shake to drawing
+            ctx.save();
+            if (screenShake > 0.5) {
+                ctx.translate(
+                    (Math.random() - 0.5) * screenShake,
+                    (Math.random() - 0.5) * screenShake
+                );
+            }
+
+            drawGrid();
+            drawWorldBorder();
+
+            // Draw objects (big first, small on top)
+            for (const obj of objects) {
+                drawObject(obj, time);
+            }
+
+            drawParticles();
+            drawHole(time);
+
+            ctx.restore();
+
+            drawHUD();
+        } else if (gameState === 'levelComplete') {
+            drawLevelComplete();
+        } else if (gameState === 'gameOver') {
+            drawGameOver();
+        }
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>

@@ -182,7 +182,32 @@
             text-shadow: none;
             box-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
         }
-        body.fullscreen #play3dBtn {
+        #playMemLeakBtn {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 10px 24px;
+            background: rgba(0, 255, 136, 0.1);
+            border: 2px solid #00ff88;
+            color: #00ff88;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.7rem, 1.8vw, 0.9rem);
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-decoration: none;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+            text-shadow: 0 0 8px #00ff88;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.15);
+        }
+        #playMemLeakBtn:hover {
+            background: #00ff88;
+            color: #0a0a0f;
+            text-shadow: none;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+        }
+        body.fullscreen #play3dBtn,
+        body.fullscreen #playMemLeakBtn {
             display: none;
         }
         #fullscreenBtn {
@@ -287,7 +312,8 @@
         body.mobile-fullscreen .subtitle,
         body.mobile-fullscreen #ui,
         body.mobile-fullscreen #instructions,
-        body.mobile-fullscreen #play3dBtn {
+        body.mobile-fullscreen #play3dBtn,
+        body.mobile-fullscreen #playMemLeakBtn {
             display: none;
         }
         body.mobile-fullscreen #versionSelector {
@@ -504,6 +530,7 @@
     </div>
     <div id="testResults"></div>
     <a href="raanman3d/" id="play3dBtn">RAANMAN LEGENDS 3D ▶</a>
+    <a href="3/" id="playMemLeakBtn">RAANMAN.EXE - MEMORY LEAK ▶</a>
     <button id="fullscreenBtn">[ ] FULLSCREEN</button>
     <div id="touchControls">
         <div class="touch-btn-group">
