@@ -1144,6 +1144,9 @@
             boss.health = boss.maxHealth;
             boss.phase = 0;
             boss.attackTimer = 60;
+            boss.hasBarked = false;
+            boss.lowHealthBarked = false;
+            bossBark = { text: '', timer: 0, opacity: 1 };
             // Spawn boss off-screen to the right (beyond visible area)
             boss.x = raanman.x + canvas.width + 100;
             boss.y = type === 'sperring' ? 350 : 420;
@@ -1183,9 +1186,83 @@
             }
         }
 
+        // Sperring barks - things he shouts during the fight
+        const sperringBarks = {
+            spawn: [
+                '"You call that code OPTIMIZED?!"',
+                '"Time to FLEX on your architecture!"',
+                '"My mustache has more commits than you!"',
+                '"SPERRING ENTERS THE CODEBASE!"',
+            ],
+            flex: [
+                '"FLEX! Feel the POWER of clean code!"',
+                '"These gains? Pure refactoring discipline."',
+                '"My muscles are O(1) complexity!"',
+                '"You think you can out-optimize ME?!"',
+                '"UNNNNGH! Maximum throughput!"',
+                '"Each rep is a deleted TODO!"',
+                '"THIS is what peak performance looks like!"',
+            ],
+            mustache: [
+                '"Taste the MUSTACHE of justice!"',
+                '"Handlebar BARRAGE!"',
+                '"My facial hair is my deadliest weapon!"',
+                '"Mustache attack! It\'s SUPER EFFECTIVE!"',
+                '"You can\'t dodge the \'stache!"',
+            ],
+            slam: [
+                '"GROUND POUND! Like a stack overflow!"',
+                '"SLAAAAM! That\'s a force push to main!"',
+                '"Coming DOWN like a production deploy!"',
+                '"Gravity is just another dependency!"',
+                '"SEISMIC COMMIT!"',
+            ],
+            hit: [
+                '"Hah! Felt that one, didn\'t ya?!"',
+                '"That\'s what you get for skipping code review!"',
+                '"Should\'ve written unit tests!"',
+            ],
+            damaged: [
+                '"Is that... is that a BUG in my armor?!"',
+                '"You think a little damage will stop SPERRING?!"',
+                '"My mustache absorbs the pain!"',
+                '"OOF! Lucky shot, developer!"',
+                '"I\'ll refactor your FACE for that!"',
+            ],
+            lowHealth: [
+                '"I\'m not... done... flexing..."',
+                '"My code... my beautiful code..."',
+                '"The mustache... it weakens..."',
+                '"You haven\'t seen my FINAL FORM!"',
+            ]
+        };
+
+        // Boss bark state
+        let bossBark = { text: '', timer: 0, opacity: 1 };
+
+        function showBossBark(category) {
+            const barks = sperringBarks[category];
+            if (!barks || barks.length === 0) return;
+            bossBark.text = barks[Math.floor(Math.random() * barks.length)];
+            bossBark.timer = 120; // ~2 seconds at 60fps
+            bossBark.opacity = 1;
+        }
+
         function updateSperring(boss) {
             // Sperring flexes at things - creating shockwaves
             boss.flexPower = Math.sin(time * 0.1) * 0.5 + 0.5;
+
+            // Spawn bark (only once)
+            if (!boss.hasBarked) {
+                boss.hasBarked = true;
+                showBossBark('spawn');
+            }
+
+            // Low health barks
+            if (boss.health <= boss.maxHealth * 0.25 && !boss.lowHealthBarked) {
+                boss.lowHealthBarked = true;
+                showBossBark('lowHealth');
+            }
 
             // Move toward player
             const dx = raanman.x - boss.x;
@@ -1202,6 +1279,7 @@
                     // Flex shockwave
                     createFlexShockwave(boss);
                     boss.attackTimer = 90;
+                    if (bossBark.timer <= 0) showBossBark('flex');
                 } else if (boss.phase === 1) {
                     // Mustache projectiles
                     for (let i = -2; i <= 2; i++) {
@@ -1216,10 +1294,12 @@
                         });
                     }
                     boss.attackTimer = 60;
+                    if (bossBark.timer <= 0) showBossBark('mustache');
                 } else {
                     // Jump slam
                     boss.vy = -20;
                     boss.attackTimer = 120;
+                    if (bossBark.timer <= 0) showBossBark('slam');
                 }
 
                 screenShake = 10;
@@ -1640,7 +1720,51 @@
                 ctx.fillRect(x - 20, y, 15, 50);
                 ctx.fillRect(x + 5, y, 15, 50);
 
-            } else if (boss.name === 'SYDNEY') {
+            }
+
+            // Boss bark speech bubble (renders for any boss with active bark)
+            if (bossBark.timer > 0) {
+                bossBark.timer--;
+                bossBark.opacity = Math.min(1, bossBark.timer / 20);
+                const barkX = x;
+                const barkY = y - boss.height - 30;
+
+                ctx.save();
+                ctx.globalAlpha = bossBark.opacity;
+
+                // Speech bubble background
+                ctx.font = 'bold 13px Courier New';
+                const textWidth = ctx.measureText(bossBark.text).width;
+                const padding = 10;
+                const bubbleW = textWidth + padding * 2;
+                const bubbleH = 28;
+
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+                ctx.beginPath();
+                ctx.roundRect(barkX - bubbleW/2, barkY - bubbleH/2, bubbleW, bubbleH, 6);
+                ctx.fill();
+                ctx.strokeStyle = boss.color || '#ff8800';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                // Speech bubble pointer
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+                ctx.beginPath();
+                ctx.moveTo(barkX - 6, barkY + bubbleH/2);
+                ctx.lineTo(barkX, barkY + bubbleH/2 + 10);
+                ctx.lineTo(barkX + 6, barkY + bubbleH/2);
+                ctx.fill();
+
+                // Text
+                ctx.fillStyle = boss.color || '#ff8800';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(bossBark.text, barkX, barkY);
+
+                ctx.restore();
+            }
+
+            if (boss.name === 'SYDNEY') {
                 // Sydney in a BMW M50
 
                 // Car body
@@ -2255,6 +2379,11 @@
                 if (dist < 500) {
                     currentBoss.health -= 30;
                     score += 250 * combo;
+
+                    // Boss bark on taking damage
+                    if (currentBoss.name === 'SPERRING' && bossBark.timer <= 0) {
+                        showBossBark('damaged');
+                    }
 
                     // Boss damage explosion
                     createParticleBurst(currentBoss.x, currentBoss.y - 30, 'boss', 80, 'explosion');
@@ -4309,12 +4438,27 @@
                     headers: { 'X-Master-Key': _rSig }
                 });
 
+                // CRITICAL: Only proceed if we got a valid response with existing data
+                // Otherwise we'd overwrite the entire leaderboard with just our entry
+                if (!fetchResponse.ok) {
+                    console.log('Server fetch failed (' + fetchResponse.status + '), skipping server save to avoid data loss');
+                    leaderboard = localLeaderboard;
+                    return;
+                }
+
+                const data = await fetchResponse.json();
                 let serverLeaderboard = [];
-                if (fetchResponse.ok) {
-                    const data = await fetchResponse.json();
-                    if (data.record && Array.isArray(data.record.leaderboard)) {
-                        serverLeaderboard = data.record.leaderboard;
-                    }
+                if (data.record && Array.isArray(data.record.leaderboard)) {
+                    serverLeaderboard = data.record.leaderboard;
+                } else if (data.record) {
+                    // Record exists but no leaderboard array - could be first save or corrupted
+                    // Safe to start fresh only if record is truly empty
+                    console.log('Server record exists but no leaderboard array, starting fresh');
+                    serverLeaderboard = [];
+                } else {
+                    console.log('Unexpected server response format, skipping server save');
+                    leaderboard = localLeaderboard;
+                    return;
                 }
 
                 // Step 2: Merge our entry into server data (by name)
@@ -4325,7 +4469,7 @@
                 serverLeaderboard = serverLeaderboard.slice(0, 100);
 
                 // Step 4: Write back to server
-                await fetch(LEADERBOARD_API, {
+                const putResponse = await fetch(LEADERBOARD_API, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -4334,10 +4478,15 @@
                     body: JSON.stringify({ leaderboard: serverLeaderboard })
                 });
 
-                // Update local cache with merged data
-                leaderboard = serverLeaderboard;
-                localStorage.setItem('raanman_leaderboard', JSON.stringify(leaderboard));
-                console.log('Leaderboard saved to server successfully');
+                if (putResponse.ok) {
+                    // Update local cache with merged data
+                    leaderboard = serverLeaderboard;
+                    localStorage.setItem('raanman_leaderboard', JSON.stringify(leaderboard));
+                    console.log('Leaderboard saved to server successfully');
+                } else {
+                    console.log('Server PUT failed (' + putResponse.status + '), keeping local data');
+                    leaderboard = localLeaderboard;
+                }
 
             } catch (e) {
                 console.log('Server save failed, using local storage', e);
