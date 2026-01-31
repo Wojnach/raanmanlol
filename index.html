@@ -155,6 +155,33 @@
             font-size: clamp(0.65rem, 1.5vw, 0.85rem);
         }
         #instructions span { color: #00ff88; }
+        #play3dBtn {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 10px 24px;
+            background: rgba(255, 0, 255, 0.15);
+            border: 2px solid #ff00ff;
+            color: #ff00ff;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.8rem, 2vw, 1rem);
+            font-weight: bold;
+            letter-spacing: 3px;
+            text-decoration: none;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+            text-shadow: 0 0 8px #ff00ff;
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.2);
+        }
+        #play3dBtn:hover {
+            background: #ff00ff;
+            color: #0a0a0f;
+            text-shadow: none;
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
+        }
+        body.fullscreen #play3dBtn {
+            display: none;
+        }
         #fullscreenBtn {
             position: fixed;
             top: 10px;
@@ -383,6 +410,7 @@
         <span>[T]</span> Tests
     </div>
     <div id="testResults"></div>
+    <a href="raanman3d/" id="play3dBtn">RAANMAN LEGENDS 3D ▶</a>
     <button id="fullscreenBtn">[ ] FULLSCREEN</button>
     <div id="touchControls">
         <div id="touch-left" class="touch-btn">◀</div>

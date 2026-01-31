@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Raanman Legends 3D</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #0a0a0f;
+            font-family: 'Courier New', monospace;
+            color: #00ff88;
+        }
+        #gameCanvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+        }
+        #hud {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 25px;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .hud-item {
+            font-size: 14px;
+            text-shadow: 0 0 8px #00ff88;
+            letter-spacing: 2px;
+        }
+        #healthBar {
+            color: #ff4444;
+            text-shadow: 0 0 8px #ff4444;
+        }
+        #hackMeter {
+            color: #ff00ff;
+            text-shadow: 0 0 8px #ff00ff;
+        }
+        #backBtn {
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            background: rgba(0, 255, 136, 0.15);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 6px 14px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 20;
+            border-radius: 3px;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        #backBtn:hover {
+            background: #00ff88;
+            color: #0a0a0f;
+        }
+        #startOverlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.92);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+        #startOverlay.hidden { display: none; }
+        #startOverlay h1 {
+            font-size: clamp(2rem, 6vw, 4rem);
+            color: #ff00ff;
+            text-shadow: 0 0 20px #ff00ff, 0 0 40px #ff00ff;
+            letter-spacing: 6px;
+            margin-bottom: 10px;
+        }
+        #startOverlay .subtitle {
+            color: #00ff88;
+            font-size: clamp(0.8rem, 2vw, 1.1rem);
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px #00ff88;
+        }
+        #startOverlay .lore {
+            color: #888;
+            font-size: clamp(0.7rem, 1.5vw, 0.9rem);
+            text-align: center;
+            line-height: 1.8;
+            max-width: 500px;
+            margin-bottom: 30px;
+        }
+        #startOverlay .lore em {
+            color: #ff00ff;
+            font-style: normal;
+        }
+        #startOverlay button {
+            padding: 15px 40px;
+            background: transparent;
+            border: 2px solid #ff00ff;
+            color: #ff00ff;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            letter-spacing: 3px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-shadow: 0 0 8px #ff00ff;
+        }
+        #startOverlay button:hover {
+            background: #ff00ff;
+            color: #0a0a0f;
+            text-shadow: none;
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
+        }
+        #startOverlay .controls-info {
+            margin-top: 20px;
+            color: #555;
+            font-size: 0.75rem;
+        }
+        #startOverlay .controls-info span {
+            color: #00ff88;
+        }
+        /* Touch controls for mobile */
+        #touchControls {
+            display: none;
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            height: 160px;
+            pointer-events: none;
+            z-index: 30;
+        }
+        @media (pointer: coarse) {
+            #touchControls { display: block; }
+        }
+        .touch-btn {
+            position: absolute;
+            width: 64px; height: 64px;
+            background: rgba(0, 255, 136, 0.15);
+            border: 2px solid rgba(0, 255, 136, 0.4);
+            border-radius: 50%;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: rgba(0, 255, 136, 0.6);
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+        .touch-btn:active {
+            background: rgba(0, 255, 136, 0.4);
+        }
+        #touch-left { left: 20px; bottom: 50px; }
+        #touch-right { left: 104px; bottom: 50px; }
+        #touch-forward { left: 62px; bottom: 120px; }
+        #touch-jump { right: 20px; bottom: 50px; }
+        /* Crosshair */
+        #crosshair {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px; height: 20px;
+            pointer-events: none;
+            z-index: 15;
+            opacity: 0.4;
+        }
+        #crosshair::before, #crosshair::after {
+            content: '';
+            position: absolute;
+            background: #00ff88;
+        }
+        #crosshair::before {
+            width: 2px; height: 100%;
+            left: 50%; transform: translateX(-50%);
+        }
+        #crosshair::after {
+            width: 100%; height: 2px;
+            top: 50%; transform: translateY(-50%);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Start Screen -->
+    <div id="startOverlay">
+        <h1>RAANMAN LEGENDS</h1>
+        <div class="subtitle">// 3D EDITION</div>
+        <div class="lore">
+            Raanman has <em>transcended the 2D plane</em>.<br><br>
+            The bugs have evolved. The technical debt has taken <em>physical form</em>.<br>
+            Now he must navigate a world of depth, shadow, and <em>unoptimized geometry</em>.<br><br>
+            <em>Move. Jump. Optimize. Survive.</em>
+        </div>
+        <button id="startBtn">ENTER THE THIRD DIMENSION</button>
+        <div class="controls-info">
+            <span>[WASD]</span> Move |
+            <span>[SPACE]</span> Jump |
+            <span>[MOUSE]</span> Look
+        </div>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud" style="display:none;">
+        <div class="hud-item" id="scoreDisplay">SCORE: 0</div>
+        <div class="hud-item" id="healthBar">HP: ██████████</div>
+        <div class="hud-item" id="hackMeter">HACK: 0%</div>
+    </div>
+    <div id="crosshair" style="display:none;"></div>
+    <a href="../" id="backBtn" style="display:none;">◀ BACK</a>
+
+    <!-- Touch Controls -->
+    <div id="touchControls">
+        <div id="touch-forward" class="touch-btn">▲</div>
+        <div id="touch-left" class="touch-btn">◀</div>
+        <div id="touch-right" class="touch-btn">▶</div>
+        <div id="touch-jump" class="touch-btn">⬆</div>
+    </div>
+
+    <!-- Three.js from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+    // ============================================
+    // RAANMAN LEGENDS 3D - THE THIRD DIMENSION
+    // ============================================
+
+    // --- Game State ---
+    const STATE = {
+        score: 0,
+        health: 100,
+        hackMeter: 0,
+        gameStarted: false,
+        gameOver: false,
+        combo: 1,
+    };
+
+    // --- Input ---
+    const keys = {};
+    const mouse = { x: 0, y: 0, locked: false };
+    const touchInput = { forward: false, left: false, right: false, jump: false };
+
+    // --- Three.js Setup ---
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a0a0f);
+    scene.fog = new THREE.FogExp2(0x0a0a0f, 0.012);
+
+    const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 500);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.body.appendChild(renderer.domElement);
+    renderer.domElement.id = 'gameCanvas';
+
+    // --- Lighting ---
+    const ambientLight = new THREE.AmbientLight(0x111122, 0.6);
+    scene.add(ambientLight);
+
+    const mainLight = new THREE.DirectionalLight(0x00ff88, 0.8);
+    mainLight.position.set(20, 40, 20);
+    mainLight.castShadow = true;
+    mainLight.shadow.mapSize.width = 2048;
+    mainLight.shadow.mapSize.height = 2048;
+    mainLight.shadow.camera.near = 0.5;
+    mainLight.shadow.camera.far = 150;
+    mainLight.shadow.camera.left = -60;
+    mainLight.shadow.camera.right = 60;
+    mainLight.shadow.camera.top = 60;
+    mainLight.shadow.camera.bottom = -60;
+    scene.add(mainLight);
+
+    const fillLight = new THREE.DirectionalLight(0xff00ff, 0.3);
+    fillLight.position.set(-15, 20, -10);
+    scene.add(fillLight);
+
+    const pointLight = new THREE.PointLight(0x00ff88, 1, 30);
+    pointLight.position.set(0, 5, 0);
+    scene.add(pointLight);
+
+    // --- Ground ---
+    const groundGeo = new THREE.PlaneGeometry(200, 200, 40, 40);
+    const groundMat = new THREE.MeshStandardMaterial({
+        color: 0x0d0d15,
+        roughness: 0.9,
+        metalness: 0.1,
+    });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // Grid overlay on ground
+    const gridHelper = new THREE.GridHelper(200, 80, 0x00ff88, 0x002211);
+    gridHelper.position.y = 0.01;
+    gridHelper.material.opacity = 0.3;
+    gridHelper.material.transparent = true;
+    scene.add(gridHelper);
+
+    // --- Player (Raanman) ---
+    const playerGroup = new THREE.Group();
+
+    // Body
+    const bodyGeo = new THREE.BoxGeometry(0.8, 1.4, 0.5);
+    const bodyMat = new THREE.MeshStandardMaterial({
+        color: 0x00ff88,
+        emissive: 0x003322,
+        roughness: 0.4,
+        metalness: 0.6,
+    });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    body.position.y = 1.4;
+    body.castShadow = true;
+    playerGroup.add(body);
+
+    // Head
+    const headGeo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
+    const headMat = new THREE.MeshStandardMaterial({
+        color: 0x00ff88,
+        emissive: 0x004433,
+        roughness: 0.3,
+        metalness: 0.7,
+    });
+    const head = new THREE.Mesh(headGeo, headMat);
+    head.position.y = 2.4;
+    head.castShadow = true;
+    playerGroup.add(head);
+
+    // Eyes (two small glowing cubes)
+    const eyeGeo = new THREE.BoxGeometry(0.12, 0.08, 0.1);
+    const eyeMat = new THREE.MeshStandardMaterial({
+        color: 0xff00ff,
+        emissive: 0xff00ff,
+        emissiveIntensity: 2,
+    });
+    const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+    leftEye.position.set(-0.15, 2.45, 0.3);
+    playerGroup.add(leftEye);
+
+    const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+    rightEye.position.set(0.15, 2.45, 0.3);
+    playerGroup.add(rightEye);
+
+    // Legs
+    const legGeo = new THREE.BoxGeometry(0.3, 0.7, 0.35);
+    const legMat = new THREE.MeshStandardMaterial({
+        color: 0x006644,
+        roughness: 0.5,
+        metalness: 0.5,
+    });
+    const leftLeg = new THREE.Mesh(legGeo, legMat);
+    leftLeg.position.set(-0.2, 0.35, 0);
+    leftLeg.castShadow = true;
+    playerGroup.add(leftLeg);
+
+    const rightLeg = new THREE.Mesh(legGeo, legMat);
+    rightLeg.position.set(0.2, 0.35, 0);
+    rightLeg.castShadow = true;
+    playerGroup.add(rightLeg);
+
+    playerGroup.position.set(0, 0, 0);
+    scene.add(playerGroup);
+
+    // Player physics state
+    const player = {
+        velocity: new THREE.Vector3(0, 0, 0),
+        speed: 8,
+        jumpForce: 10,
+        onGround: true,
+        yaw: 0,
+        pitch: 0,
+    };
+
+    // --- Camera Setup (Third-Person Over-the-Shoulder) ---
+    const cameraOffset = new THREE.Vector3(1.5, 3, -5); // right, up, behind
+    const cameraLookOffset = new THREE.Vector3(0, 2, 0);
+
+    // --- Platforms ---
+    const platforms = [];
+    const platformMaterials = [
+        new THREE.MeshStandardMaterial({ color: 0x00ff88, emissive: 0x002211, roughness: 0.5, metalness: 0.5 }),
+        new THREE.MeshStandardMaterial({ color: 0xff00ff, emissive: 0x220011, roughness: 0.5, metalness: 0.5 }),
+        new THREE.MeshStandardMaterial({ color: 0x00aaff, emissive: 0x001122, roughness: 0.5, metalness: 0.5 }),
+    ];
+
+    function createPlatform(x, y, z, w, h, d, matIndex) {
+        const geo = new THREE.BoxGeometry(w, h, d);
+        const mesh = new THREE.Mesh(geo, platformMaterials[matIndex || 0]);
+        mesh.position.set(x, y, z);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        scene.add(mesh);
+        platforms.push({
+            mesh,
+            box: new THREE.Box3().setFromObject(mesh),
+        });
+        return mesh;
+    }
+
+    // Build some initial platforms
+    function generateWorld() {
+        // Starting area platforms
+        createPlatform(4, 1, 4, 3, 0.4, 3, 0);
+        createPlatform(-3, 2, 8, 4, 0.4, 2, 1);
+        createPlatform(8, 3, 12, 3, 0.4, 3, 2);
+        createPlatform(0, 4, 16, 5, 0.4, 2, 0);
+        createPlatform(-6, 2.5, 3, 2, 0.4, 4, 1);
+        createPlatform(10, 5, 20, 4, 0.4, 3, 2);
+        createPlatform(-4, 6, 22, 3, 0.4, 3, 0);
+        createPlatform(5, 7, 28, 6, 0.4, 2, 1);
+        createPlatform(-8, 3, 15, 3, 0.4, 3, 2);
+        createPlatform(12, 4.5, 8, 2, 0.4, 5, 0);
+
+        // Scattered further platforms
+        for (let i = 0; i < 30; i++) {
+            const x = (Math.random() - 0.5) * 80;
+            const y = 1 + Math.random() * 10;
+            const z = 10 + Math.random() * 80;
+            const w = 2 + Math.random() * 4;
+            const d = 2 + Math.random() * 4;
+            createPlatform(x, y, z, w, 0.4, d, Math.floor(Math.random() * 3));
+        }
+    }
+
+    // --- Collectibles (Optimizations) ---
+    const collectibles = [];
+    const collectibleGeo = new THREE.OctahedronGeometry(0.3, 0);
+    const collectibleMat = new THREE.MeshStandardMaterial({
+        color: 0xffff00,
+        emissive: 0xffff00,
+        emissiveIntensity: 0.8,
+        roughness: 0.2,
+        metalness: 0.8,
+    });
+
+    function spawnCollectibles() {
+        for (let i = 0; i < 40; i++) {
+            const mesh = new THREE.Mesh(collectibleGeo, collectibleMat);
+            mesh.position.set(
+                (Math.random() - 0.5) * 80,
+                1 + Math.random() * 12,
+                5 + Math.random() * 85
+            );
+            mesh.castShadow = true;
+            scene.add(mesh);
+            collectibles.push({ mesh, collected: false });
+        }
+    }
+
+    // --- Enemies (Bugs) ---
+    const enemies = [];
+    const enemyGeo = new THREE.IcosahedronGeometry(0.5, 0);
+    const enemyMat = new THREE.MeshStandardMaterial({
+        color: 0xff0044,
+        emissive: 0xff0022,
+        emissiveIntensity: 0.6,
+        roughness: 0.3,
+        metalness: 0.7,
+    });
+
+    function spawnEnemies() {
+        for (let i = 0; i < 15; i++) {
+            const mesh = new THREE.Mesh(enemyGeo, enemyMat);
+            const x = (Math.random() - 0.5) * 60;
+            const z = 10 + Math.random() * 70;
+            mesh.position.set(x, 1, z);
+            mesh.castShadow = true;
+            scene.add(mesh);
+            enemies.push({
+                mesh,
+                baseY: 1,
+                phase: Math.random() * Math.PI * 2,
+                speed: 1 + Math.random() * 2,
+                range: 3 + Math.random() * 5,
+                originX: x,
+                originZ: z,
+                alive: true,
+            });
+        }
+    }
+
+    // --- Background Particles (Floating data bits) ---
+    const particleCount = 300;
+    const particleGeo = new THREE.BufferGeometry();
+    const particlePositions = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+        particlePositions[i * 3] = (Math.random() - 0.5) * 150;
+        particlePositions[i * 3 + 1] = Math.random() * 40;
+        particlePositions[i * 3 + 2] = (Math.random() - 0.5) * 150;
+    }
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+    const particleMat = new THREE.PointsMaterial({
+        color: 0x00ff88,
+        size: 0.15,
+        transparent: true,
+        opacity: 0.5,
+    });
+    const particles = new THREE.Points(particleGeo, particleMat);
+    scene.add(particles);
+
+    // --- Skybox Pillars (Cyber cityscape in the distance) ---
+    function createCityscape() {
+        const pillarMat = new THREE.MeshStandardMaterial({
+            color: 0x0a0a1a,
+            emissive: 0x001108,
+            roughness: 0.8,
+            metalness: 0.3,
+        });
+        for (let i = 0; i < 40; i++) {
+            const w = 1 + Math.random() * 3;
+            const h = 5 + Math.random() * 30;
+            const d = 1 + Math.random() * 3;
+            const geo = new THREE.BoxGeometry(w, h, d);
+            const pillar = new THREE.Mesh(geo, pillarMat);
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 60 + Math.random() * 30;
+            pillar.position.set(Math.cos(angle) * dist, h / 2, Math.sin(angle) * dist);
+            pillar.receiveShadow = true;
+            scene.add(pillar);
+        }
+    }
+
+    // --- Initialize World ---
+    generateWorld();
+    spawnCollectibles();
+    spawnEnemies();
+    createCityscape();
+
+    // --- Input Handlers ---
+    document.addEventListener('keydown', (e) => {
+        keys[e.code] = true;
+        if (e.code === 'Space') e.preventDefault();
+    });
+    document.addEventListener('keyup', (e) => {
+        keys[e.code] = false;
+    });
+
+    // Pointer lock for mouse look
+    renderer.domElement.addEventListener('click', () => {
+        if (STATE.gameStarted && !mouse.locked) {
+            renderer.domElement.requestPointerLock();
+        }
+    });
+    document.addEventListener('pointerlockchange', () => {
+        mouse.locked = document.pointerLockElement === renderer.domElement;
+    });
+    document.addEventListener('mousemove', (e) => {
+        if (!mouse.locked) return;
+        const sensitivity = 0.002;
+        player.yaw -= e.movementX * sensitivity;
+        player.pitch -= e.movementY * sensitivity;
+        player.pitch = Math.max(-1.2, Math.min(0.8, player.pitch));
+    });
+
+    // Touch controls
+    function setupTouch(id, key) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('touchstart', (e) => { e.preventDefault(); touchInput[key] = true; });
+        el.addEventListener('touchend', (e) => { e.preventDefault(); touchInput[key] = false; });
+        el.addEventListener('touchcancel', (e) => { e.preventDefault(); touchInput[key] = false; });
+    }
+    setupTouch('touch-forward', 'forward');
+    setupTouch('touch-left', 'left');
+    setupTouch('touch-right', 'right');
+    setupTouch('touch-jump', 'jump');
+
+    // --- Start Game ---
+    document.getElementById('startBtn').addEventListener('click', () => {
+        STATE.gameStarted = true;
+        document.getElementById('startOverlay').classList.add('hidden');
+        document.getElementById('hud').style.display = 'flex';
+        document.getElementById('crosshair').style.display = 'block';
+        document.getElementById('backBtn').style.display = 'block';
+        renderer.domElement.requestPointerLock();
+    });
+
+    // --- HUD Update ---
+    function updateHUD() {
+        document.getElementById('scoreDisplay').textContent = `SCORE: ${STATE.score}`;
+        const bars = Math.max(0, Math.round(STATE.health / 10));
+        document.getElementById('healthBar').textContent = `HP: ${'█'.repeat(bars)}${'░'.repeat(10 - bars)}`;
+        document.getElementById('hackMeter').textContent = `HACK: ${Math.floor(STATE.hackMeter)}%`;
+    }
+
+    // --- Gravity & Physics ---
+    const GRAVITY = -25;
+
+    function getPlayerBoundingBox() {
+        const pos = playerGroup.position;
+        return new THREE.Box3(
+            new THREE.Vector3(pos.x - 0.4, pos.y, pos.z - 0.25),
+            new THREE.Vector3(pos.x + 0.4, pos.y + 2.8, pos.z + 0.25)
+        );
+    }
+
+    function checkPlatformCollision() {
+        const pBox = getPlayerBoundingBox();
+        // Ground
+        if (playerGroup.position.y <= 0) {
+            playerGroup.position.y = 0;
+            player.velocity.y = 0;
+            player.onGround = true;
+            return;
+        }
+        // Platforms
+        for (const plat of platforms) {
+            plat.box.setFromObject(plat.mesh);
+            if (pBox.intersectsBox(plat.box)) {
+                const platTop = plat.box.max.y;
+                const playerBottom = playerGroup.position.y;
+                // Landing on top
+                if (player.velocity.y <= 0 && playerBottom >= platTop - 0.6) {
+                    playerGroup.position.y = platTop;
+                    player.velocity.y = 0;
+                    player.onGround = true;
+                    return;
+                }
+            }
+        }
+        player.onGround = false;
+    }
+
+    // --- Collectible Check ---
+    function checkCollectibles() {
+        const pPos = playerGroup.position;
+        for (const c of collectibles) {
+            if (c.collected) continue;
+            const dist = pPos.distanceTo(c.mesh.position);
+            if (dist < 1.2) {
+                c.collected = true;
+                scene.remove(c.mesh);
+                STATE.score += 100 * STATE.combo;
+                STATE.hackMeter = Math.min(100, STATE.hackMeter + 5);
+                STATE.combo++;
+            }
+        }
+    }
+
+    // --- Enemy Check ---
+    function updateEnemies(dt) {
+        const pPos = playerGroup.position;
+        for (const e of enemies) {
+            if (!e.alive) continue;
+            e.phase += dt * e.speed;
+            e.mesh.position.x = e.originX + Math.sin(e.phase) * e.range;
+            e.mesh.position.y = e.baseY + Math.abs(Math.sin(e.phase * 1.5)) * 1.5;
+            e.mesh.rotation.x += dt * 2;
+            e.mesh.rotation.y += dt * 3;
+
+            const dist = pPos.distanceTo(e.mesh.position);
+            if (dist < 1.5) {
+                // Check if player is landing on enemy (stomp)
+                if (player.velocity.y < -2 && pPos.y > e.mesh.position.y) {
+                    e.alive = false;
+                    scene.remove(e.mesh);
+                    STATE.score += 200 * STATE.combo;
+                    STATE.combo++;
+                    player.velocity.y = 8; // bounce
+                } else {
+                    STATE.health -= 20 * dt;
+                    STATE.combo = 1;
+                }
+            }
+        }
+    }
+
+    // --- Animation ---
+    function animatePlayer(dt) {
+        const t = performance.now() * 0.005;
+        // Leg animation when moving
+        const isMoving = keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD']
+            || touchInput.forward || touchInput.left || touchInput.right;
+        if (isMoving && player.onGround) {
+            leftLeg.rotation.x = Math.sin(t * 3) * 0.6;
+            rightLeg.rotation.x = Math.sin(t * 3 + Math.PI) * 0.6;
+        } else {
+            leftLeg.rotation.x *= 0.9;
+            rightLeg.rotation.x *= 0.9;
+        }
+        // Bobbing
+        body.position.y = 1.4 + Math.sin(t * 2) * 0.03;
+        // Eyes glow pulse
+        eyeMat.emissiveIntensity = 1.5 + Math.sin(t * 4) * 0.5;
+    }
+
+    // --- Animate Collectibles ---
+    function animateCollectibles(dt) {
+        const t = performance.now() * 0.002;
+        for (const c of collectibles) {
+            if (c.collected) continue;
+            c.mesh.rotation.y += dt * 2;
+            c.mesh.position.y += Math.sin(t + c.mesh.position.x) * 0.003;
+        }
+    }
+
+    // --- Floating Particles ---
+    function animateParticles(dt) {
+        const positions = particleGeo.attributes.position.array;
+        for (let i = 0; i < particleCount; i++) {
+            positions[i * 3 + 1] += dt * 0.3;
+            if (positions[i * 3 + 1] > 40) positions[i * 3 + 1] = 0;
+        }
+        particleGeo.attributes.position.needsUpdate = true;
+    }
+
+    // --- Game Loop ---
+    let lastTime = performance.now();
+
+    function gameLoop() {
+        requestAnimationFrame(gameLoop);
+
+        const now = performance.now();
+        let dt = (now - lastTime) / 1000;
+        lastTime = now;
+        dt = Math.min(dt, 0.05); // clamp delta
+
+        if (!STATE.gameStarted) {
+            // Idle rotation on start screen
+            camera.position.set(
+                Math.sin(now * 0.0003) * 15,
+                8,
+                Math.cos(now * 0.0003) * 15
+            );
+            camera.lookAt(0, 2, 0);
+            renderer.render(scene, camera);
+            return;
+        }
+
+        // --- Player Movement ---
+        const forward = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), player.yaw);
+        const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), player.yaw);
+
+        const moveDir = new THREE.Vector3(0, 0, 0);
+        if (keys['KeyW'] || keys['ArrowUp'] || touchInput.forward) moveDir.add(forward);
+        if (keys['KeyS'] || keys['ArrowDown']) moveDir.sub(forward);
+        if (keys['KeyA'] || keys['ArrowLeft'] || touchInput.left) moveDir.sub(right);
+        if (keys['KeyD'] || keys['ArrowRight'] || touchInput.right) moveDir.add(right);
+
+        if (moveDir.length() > 0) {
+            moveDir.normalize();
+            playerGroup.position.x += moveDir.x * player.speed * dt;
+            playerGroup.position.z += moveDir.z * player.speed * dt;
+
+            // Rotate character to face movement direction
+            const targetYaw = Math.atan2(moveDir.x, moveDir.z);
+            // Smooth rotation
+            let diff = targetYaw - playerGroup.rotation.y;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            playerGroup.rotation.y += diff * 8 * dt;
+        }
+
+        // Jump
+        if ((keys['Space'] || touchInput.jump) && player.onGround) {
+            player.velocity.y = player.jumpForce;
+            player.onGround = false;
+        }
+
+        // Gravity
+        player.velocity.y += GRAVITY * dt;
+        playerGroup.position.y += player.velocity.y * dt;
+
+        // Collision
+        checkPlatformCollision();
+
+        // Fall reset
+        if (playerGroup.position.y < -20) {
+            playerGroup.position.set(0, 5, 0);
+            player.velocity.set(0, 0, 0);
+            STATE.health -= 20;
+            STATE.combo = 1;
+        }
+
+        // --- Camera ---
+        const cameraTarget = new THREE.Vector3();
+        cameraTarget.copy(playerGroup.position).add(cameraLookOffset);
+
+        // Compute desired camera position
+        const desiredCamPos = new THREE.Vector3();
+        desiredCamPos.copy(cameraOffset);
+        desiredCamPos.applyAxisAngle(new THREE.Vector3(1, 0, 0), player.pitch);
+        desiredCamPos.applyAxisAngle(new THREE.Vector3(0, 1, 0), player.yaw);
+        desiredCamPos.add(playerGroup.position);
+        desiredCamPos.y = Math.max(desiredCamPos.y, 0.5); // don't go below ground
+
+        camera.position.lerp(desiredCamPos, 8 * dt);
+        camera.lookAt(cameraTarget);
+
+        // Move point light with player
+        pointLight.position.set(playerGroup.position.x, playerGroup.position.y + 3, playerGroup.position.z);
+
+        // --- Updates ---
+        animatePlayer(dt);
+        animateCollectibles(dt);
+        animateParticles(dt);
+        updateEnemies(dt);
+        checkCollectibles();
+        updateHUD();
+
+        // --- Health check ---
+        if (STATE.health <= 0 && !STATE.gameOver) {
+            STATE.gameOver = true;
+            STATE.health = 0;
+            // Simple game over - just reset for now
+            setTimeout(() => {
+                STATE.health = 100;
+                STATE.score = 0;
+                STATE.combo = 1;
+                STATE.hackMeter = 0;
+                STATE.gameOver = false;
+                playerGroup.position.set(0, 0, 0);
+                player.velocity.set(0, 0, 0);
+            }, 2000);
+        }
+
+        renderer.render(scene, camera);
+    }
+
+    // --- Handle Resize ---
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // --- Start Loop ---
+    gameLoop();
+
+    </script>
+</body>
+</html>
