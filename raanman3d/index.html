@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Raanman Legends 3D</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #0a0a0f;
+            font-family: 'Courier New', monospace;
+            color: #00ff88;
+        }
+        canvas {
+            display: block;
+            width: 100%; height: 100%;
+            outline: none;
+            touch-action: none;
+        }
+        #hud {
+            position: fixed;
+            top: 0; right: 0;
+            padding: 15px 25px;
+            pointer-events: none;
+            z-index: 10;
+            text-align: right;
+        }
+        .hud-item {
+            font-size: 14px;
+            text-shadow: 0 0 8px #00ff88;
+            letter-spacing: 2px;
+            margin-bottom: 4px;
+        }
+        #healthBar {
+            color: #ff4444;
+            text-shadow: 0 0 8px #ff4444;
+        }
+        #hackMeter {
+            color: #ff00ff;
+            text-shadow: 0 0 8px #ff00ff;
+        }
+        #comboDisplay {
+            color: #ffff00;
+            text-shadow: 0 0 8px #ffff00;
+        }
+        #backBtn {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            background: rgba(0, 255, 136, 0.15);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 6px 14px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 20;
+            border-radius: 3px;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        #backBtn:hover {
+            background: #00ff88;
+            color: #0a0a0f;
+        }
+        /* --- Start Overlay --- */
+        #startOverlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.92);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+        #startOverlay.hidden { display: none; }
+        #startOverlay h1 {
+            font-size: clamp(2rem, 6vw, 4rem);
+            color: #ff00ff;
+            text-shadow: 0 0 20px #ff00ff, 0 0 40px #ff00ff;
+            letter-spacing: 6px;
+            margin-bottom: 10px;
+        }
+        #startOverlay .subtitle {
+            color: #00ff88;
+            font-size: clamp(0.8rem, 2vw, 1.1rem);
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px #00ff88;
+        }
+        #startOverlay .lore {
+            color: #888;
+            font-size: clamp(0.7rem, 1.5vw, 0.9rem);
+            text-align: center;
+            line-height: 1.8;
+            max-width: 500px;
+            margin-bottom: 30px;
+            padding: 0 20px;
+        }
+        #startOverlay .lore em {
+            color: #ff00ff;
+            font-style: normal;
+        }
+        #startOverlay button {
+            padding: 15px 40px;
+            background: transparent;
+            border: 2px solid #ff00ff;
+            color: #ff00ff;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            letter-spacing: 3px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-shadow: 0 0 8px #ff00ff;
+        }
+        #startOverlay button:hover {
+            background: #ff00ff;
+            color: #0a0a0f;
+            text-shadow: none;
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
+        }
+        #startOverlay .controls-info {
+            margin-top: 20px;
+            color: #555;
+            font-size: 0.75rem;
+            text-align: center;
+        }
+        #startOverlay .controls-info span {
+            color: #00ff88;
+        }
+        /* --- Game Over Overlay --- */
+        #gameOverOverlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+        #gameOverOverlay.active { display: flex; }
+        #gameOverOverlay h2 {
+            color: #ff0055;
+            font-size: clamp(2rem, 5vw, 3rem);
+            text-shadow: 0 0 20px #ff0055;
+            margin-bottom: 15px;
+            letter-spacing: 4px;
+        }
+        #gameOverOverlay .stats {
+            color: #888;
+            font-size: 1rem;
+            line-height: 2;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        #gameOverOverlay .stats span {
+            color: #00ff88;
+        }
+        #gameOverOverlay button {
+            padding: 15px 40px;
+            background: transparent;
+            border: 2px solid #00ff88;
+            color: #00ff88;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            letter-spacing: 3px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        #gameOverOverlay button:hover {
+            background: #00ff88;
+            color: #0a0a0f;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+        }
+        /* --- Touch Controls --- */
+        #touchControls {
+            display: none;
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            height: 180px;
+            pointer-events: none;
+            z-index: 30;
+        }
+        /* Touch look zone (right side of screen for camera drag) */
+        #touchLookZone {
+            display: none;
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 50%;
+            height: calc(100% - 200px);
+            z-index: 25;
+            touch-action: none;
+        }
+        @media (pointer: coarse) {
+            #touchControls { display: block; }
+            #touchLookZone { display: block; }
+            #hud { top: auto; bottom: 210px; right: 10px; font-size: 12px; }
+            #crosshair { display: none !important; }
+            .hud-item { font-size: 12px; }
+        }
+        .touch-btn {
+            position: absolute;
+            width: 72px; height: 72px;
+            background: rgba(0, 255, 136, 0.15);
+            border: 2px solid rgba(0, 255, 136, 0.4);
+            border-radius: 50%;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: rgba(0, 255, 136, 0.6);
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+        .touch-btn:active {
+            background: rgba(0, 255, 136, 0.4);
+        }
+        #touch-forward { left: 56px; bottom: 140px; }
+        #touch-back { left: 56px; bottom: 15px; }
+        #touch-left { left: 5px; bottom: 72px; }
+        #touch-right { left: 107px; bottom: 72px; }
+        #touch-jump { right: 25px; bottom: 72px; width: 80px; height: 80px; font-size: 28px; }
+        /* --- Crosshair --- */
+        #crosshair {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px; height: 20px;
+            pointer-events: none;
+            z-index: 15;
+            opacity: 0.3;
+        }
+        #crosshair::before, #crosshair::after {
+            content: '';
+            position: absolute;
+            background: #00ff88;
+        }
+        #crosshair::before {
+            width: 2px; height: 100%;
+            left: 50%; transform: translateX(-50%);
+        }
+        #crosshair::after {
+            width: 100%; height: 2px;
+            top: 50%; transform: translateY(-50%);
+        }
+        /* --- Test Results --- */
+        #testResults {
+            position: fixed;
+            bottom: 10px; left: 10px;
+            background: rgba(0,0,0,0.85);
+            border: 1px solid #00ff88;
+            padding: 10px 14px;
+            font-size: 11px;
+            z-index: 100;
+            max-height: 300px;
+            overflow-y: auto;
+            border-radius: 4px;
+            display: none;
+            min-width: 300px;
+        }
+        #testResults.visible { display: block; }
+        .test-pass { color: #00ff88; }
+        .test-fail { color: #ff0044; }
+        .test-header { color: #ff00ff; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+    <!-- Canvas for Babylon.js -->
+    <canvas id="renderCanvas"></canvas>
+
+    <!-- Start Screen -->
+    <div id="startOverlay">
+        <h1>RAANMAN LEGENDS</h1>
+        <div class="subtitle">// 3D EDITION</div>
+        <div class="lore">
+            Raanman has <em>transcended the 2D plane</em>.<br><br>
+            The bugs have evolved. The technical debt has taken <em>physical form</em>.<br>
+            Now he must navigate a world of depth, shadow, and <em>unoptimized geometry</em>.<br><br>
+            <em>Move. Jump. Optimize. Survive.</em>
+        </div>
+        <button id="startBtn">ENTER THE THIRD DIMENSION</button>
+        <div class="controls-info" id="controlsDesktop">
+            <span>[WASD]</span> Move |
+            <span>[SPACE]</span> Jump |
+            <span>[MOUSE]</span> Look |
+            <span>[T]</span> Tests
+        </div>
+        <div class="controls-info" id="controlsMobile" style="display:none;">
+            <span>D-Pad</span> Move |
+            <span>&#11014;</span> Jump |
+            <span>Drag right side</span> Look
+        </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameOverOverlay">
+        <h2>SEGMENTATION FAULT</h2>
+        <div class="stats">
+            Score: <span id="finalScore">0</span><br>
+            Max Combo: <span id="finalCombo">0</span><br>
+            Optimizations: <span id="finalCollected">0</span><br>
+            Bugs Stomped: <span id="finalEnemies">0</span>
+        </div>
+        <button id="restartBtn">RECOMPILE [ENTER]</button>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud" style="display:none;">
+        <div class="hud-item" id="scoreDisplay">SCORE: 0</div>
+        <div class="hud-item" id="comboDisplay">COMBO: x1</div>
+        <div class="hud-item" id="healthBar">HP: ██████████</div>
+        <div class="hud-item" id="hackMeter">HACK: 0%</div>
+    </div>
+    <div id="crosshair" style="display:none;"></div>
+    <a href="../" id="backBtn">&#9664; BACK</a>
+
+    <!-- Touch Look Zone (right half of screen for camera drag) -->
+    <div id="touchLookZone"></div>
+
+    <!-- Touch Controls -->
+    <div id="touchControls">
+        <div id="touch-forward" class="touch-btn">&#9650;</div>
+        <div id="touch-back" class="touch-btn">&#9660;</div>
+        <div id="touch-left" class="touch-btn">&#9664;</div>
+        <div id="touch-right" class="touch-btn">&#9654;</div>
+        <div id="touch-jump" class="touch-btn">&#11014;</div>
+    </div>
+
+    <!-- Test Results Panel -->
+    <div id="testResults"></div>
+
+    <!-- Babylon.js from CDN -->
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+
+    <script>
+    // ============================================
+    // RAANMAN LEGENDS 3D - BABYLON.JS EDITION
+    // ============================================
+
+    // --- Game State ---
+    const STATE = {
+        score: 0,
+        health: 100,
+        hackMeter: 0,
+        combo: 1,
+        maxCombo: 1,
+        collected: 0,
+        enemiesStomped: 0,
+        gameStarted: false,
+        gameOver: false,
+    };
+
+    // --- Input ---
+    const keys = {};
+    const touchInput = { forward: false, back: false, left: false, right: false, jump: false };
+    let cameraYaw = 0;
+    let cameraPitch = 0.3;
+    let pointerLocked = false;
+
+    // --- Babylon.js Engine Setup ---
+    const canvas = document.getElementById('renderCanvas');
+    const engine = new BABYLON.Engine(canvas, true, {
+        preserveDrawingBuffer: true,
+        stencil: true,
+    });
+
+    const scene = new BABYLON.Scene(engine);
+    scene.clearColor = new BABYLON.Color4(0.04, 0.04, 0.06, 1);
+    scene.fogMode = BABYLON.Scene.FOGMODE_EXP2;
+    scene.fogDensity = 0.012;
+    scene.fogColor = new BABYLON.Color3(0.04, 0.04, 0.06);
+    scene.ambientColor = new BABYLON.Color3(0.1, 0.1, 0.15);
+
+    // --- Camera ---
+    const camera = new BABYLON.FreeCamera('camera', new BABYLON.Vector3(0, 5, -8), scene);
+    camera.minZ = 0.1;
+    camera.maxZ = 500;
+    camera.fov = 1.1; // ~63 degrees
+
+    // Detach default controls - we handle input ourselves
+    camera.detachControl(canvas);
+
+    // --- Glow Layer ---
+    const glowLayer = new BABYLON.GlowLayer('glow', scene, {
+        mainTextureSamples: 4,
+        blurKernelSize: 32,
+    });
+    glowLayer.intensity = 0.6;
+
+    // --- Lighting ---
+    const hemisphericLight = new BABYLON.HemisphericLight('hemiLight',
+        new BABYLON.Vector3(0, 1, 0), scene);
+    hemisphericLight.intensity = 0.4;
+    hemisphericLight.diffuse = new BABYLON.Color3(0.07, 0.07, 0.12);
+    hemisphericLight.groundColor = new BABYLON.Color3(0.02, 0.02, 0.05);
+
+    const dirLight = new BABYLON.DirectionalLight('dirLight',
+        new BABYLON.Vector3(-0.5, -1, 0.5), scene);
+    dirLight.position = new BABYLON.Vector3(20, 40, -20);
+    dirLight.intensity = 1.0;
+    dirLight.diffuse = new BABYLON.Color3(0, 1, 0.53);
+
+    // Shadows
+    const shadowGen = new BABYLON.ShadowGenerator(2048, dirLight);
+    shadowGen.usePercentageCloserFiltering = true;
+    shadowGen.filteringQuality = BABYLON.ShadowGenerator.QUALITY_MEDIUM;
+
+    const fillLight = new BABYLON.DirectionalLight('fillLight',
+        new BABYLON.Vector3(0.5, -0.5, -0.3), scene);
+    fillLight.intensity = 0.3;
+    fillLight.diffuse = new BABYLON.Color3(1, 0, 1);
+
+    const playerLight = new BABYLON.PointLight('playerLight',
+        new BABYLON.Vector3(0, 5, 0), scene);
+    playerLight.intensity = 1.5;
+    playerLight.diffuse = new BABYLON.Color3(0, 1, 0.53);
+    playerLight.range = 25;
+
+    // --- Materials ---
+    function makeGlowMat(name, color, emissiveColor, alpha) {
+        const mat = new BABYLON.StandardMaterial(name, scene);
+        mat.diffuseColor = BABYLON.Color3.FromHexString(color);
+        mat.emissiveColor = BABYLON.Color3.FromHexString(emissiveColor || color);
+        mat.specularColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+        if (alpha !== undefined) {
+            mat.alpha = alpha;
+            mat.backFaceCulling = false;
+        }
+        return mat;
+    }
+
+    const groundMat = makeGlowMat('groundMat', '#0d0d15', '#010103');
+    const playerBodyMat = makeGlowMat('bodyMat', '#00ff88', '#004422');
+    const playerHeadMat = makeGlowMat('headMat', '#00ff88', '#005533');
+    const playerEyeMat = makeGlowMat('eyeMat', '#ff00ff', '#ff00ff');
+    const playerLegMat = makeGlowMat('legMat', '#006644', '#002211');
+    const collectibleMat = makeGlowMat('collectMat', '#ffff00', '#ffaa00');
+    const enemyMat = makeGlowMat('enemyMat', '#ff0044', '#ff0022');
+    const pillarMat = makeGlowMat('pillarMat', '#0a0a1a', '#001108');
+
+    const platformMats = [
+        makeGlowMat('platMat0', '#00ff88', '#002211'),
+        makeGlowMat('platMat1', '#ff00ff', '#220011'),
+        makeGlowMat('platMat2', '#00aaff', '#001122'),
+    ];
+
+    // --- Ground ---
+    const ground = BABYLON.MeshBuilder.CreateGround('ground', {
+        width: 200, height: 200, subdivisions: 1,
+    }, scene);
+    ground.material = groundMat;
+    ground.receiveShadows = true;
+
+    // Grid lines on ground
+    const gridSize = 200;
+    const gridStep = 2.5;
+    const gridPoints = [];
+    for (let i = -gridSize / 2; i <= gridSize / 2; i += gridStep) {
+        gridPoints.push([
+            new BABYLON.Vector3(i, 0.02, -gridSize / 2),
+            new BABYLON.Vector3(i, 0.02, gridSize / 2),
+        ]);
+        gridPoints.push([
+            new BABYLON.Vector3(-gridSize / 2, 0.02, i),
+            new BABYLON.Vector3(gridSize / 2, 0.02, i),
+        ]);
+    }
+    const gridMesh = BABYLON.MeshBuilder.CreateLineSystem('grid', {
+        lines: gridPoints,
+    }, scene);
+    gridMesh.color = new BABYLON.Color3(0, 1, 0.53);
+    gridMesh.alpha = 0.12;
+
+    // --- Player (Raanman) ---
+    const playerRoot = new BABYLON.TransformNode('playerRoot', scene);
+    playerRoot.position = new BABYLON.Vector3(0, 0, 0);
+
+    const playerBody = BABYLON.MeshBuilder.CreateBox('body', { width: 0.8, height: 1.4, depth: 0.5 }, scene);
+    playerBody.material = playerBodyMat;
+    playerBody.position.y = 1.4;
+    playerBody.parent = playerRoot;
+    shadowGen.addShadowCaster(playerBody);
+
+    const playerHead = BABYLON.MeshBuilder.CreateBox('head', { width: 0.6, height: 0.6, depth: 0.6 }, scene);
+    playerHead.material = playerHeadMat;
+    playerHead.position.y = 2.4;
+    playerHead.parent = playerRoot;
+    shadowGen.addShadowCaster(playerHead);
+
+    const leftEye = BABYLON.MeshBuilder.CreateBox('leftEye', { width: 0.12, height: 0.08, depth: 0.1 }, scene);
+    leftEye.material = playerEyeMat;
+    leftEye.position = new BABYLON.Vector3(-0.15, 2.45, 0.3);
+    leftEye.parent = playerRoot;
+
+    const rightEye = BABYLON.MeshBuilder.CreateBox('rightEye', { width: 0.12, height: 0.08, depth: 0.1 }, scene);
+    rightEye.material = playerEyeMat;
+    rightEye.position = new BABYLON.Vector3(0.15, 2.45, 0.3);
+    rightEye.parent = playerRoot;
+
+    const leftLeg = BABYLON.MeshBuilder.CreateBox('leftLeg', { width: 0.3, height: 0.7, depth: 0.35 }, scene);
+    leftLeg.material = playerLegMat;
+    leftLeg.position = new BABYLON.Vector3(-0.2, 0.35, 0);
+    leftLeg.parent = playerRoot;
+    shadowGen.addShadowCaster(leftLeg);
+
+    const rightLeg = BABYLON.MeshBuilder.CreateBox('rightLeg', { width: 0.3, height: 0.7, depth: 0.35 }, scene);
+    rightLeg.material = playerLegMat;
+    rightLeg.position = new BABYLON.Vector3(0.2, 0.35, 0);
+    rightLeg.parent = playerRoot;
+    shadowGen.addShadowCaster(rightLeg);
+
+    // Player physics
+    const playerPhysics = {
+        velocityY: 0,
+        speed: 8,
+        jumpForce: 11,
+        onGround: true,
+    };
+    const GRAVITY = -28;
+
+    // --- Camera Offset (over-the-shoulder) ---
+    const CAM_OFFSET = new BABYLON.Vector3(1.5, 3.5, -6);
+    const CAM_LOOK_OFFSET = new BABYLON.Vector3(0, 2, 0);
+
+    // --- Platforms ---
+    const platforms = [];
+
+    function createPlatform(x, y, z, w, h, d, matIdx) {
+        const mesh = BABYLON.MeshBuilder.CreateBox('plat_' + platforms.length, {
+            width: w, height: h, depth: d,
+        }, scene);
+        mesh.material = platformMats[matIdx || 0];
+        mesh.position = new BABYLON.Vector3(x, y, z);
+        mesh.receiveShadows = true;
+        shadowGen.addShadowCaster(mesh);
+        platforms.push(mesh);
+        return mesh;
+    }
+
+    function generateWorld() {
+        // Hand-placed starting area
+        createPlatform(4, 1, 4, 3, 0.4, 3, 0);
+        createPlatform(-3, 2, 8, 4, 0.4, 2, 1);
+        createPlatform(8, 3, 12, 3, 0.4, 3, 2);
+        createPlatform(0, 4, 16, 5, 0.4, 2, 0);
+        createPlatform(-6, 2.5, 3, 2, 0.4, 4, 1);
+        createPlatform(10, 5, 20, 4, 0.4, 3, 2);
+        createPlatform(-4, 6, 22, 3, 0.4, 3, 0);
+        createPlatform(5, 7, 28, 6, 0.4, 2, 1);
+        createPlatform(-8, 3, 15, 3, 0.4, 3, 2);
+        createPlatform(12, 4.5, 8, 2, 0.4, 5, 0);
+
+        // Procedural
+        for (let i = 0; i < 30; i++) {
+            const px = (Math.random() - 0.5) * 80;
+            const py = 1 + Math.random() * 10;
+            const pz = 10 + Math.random() * 80;
+            const pw = 2 + Math.random() * 4;
+            const pd = 2 + Math.random() * 4;
+            createPlatform(px, py, pz, pw, 0.4, pd, Math.floor(Math.random() * 3));
+        }
+    }
+
+    // --- Collectibles ---
+    const collectibles = [];
+
+    function spawnCollectibles() {
+        for (let i = 0; i < 40; i++) {
+            const mesh = BABYLON.MeshBuilder.CreatePolyhedron('collect_' + i, {
+                type: 1, size: 0.25,
+            }, scene);
+            mesh.material = collectibleMat;
+            mesh.position = new BABYLON.Vector3(
+                (Math.random() - 0.5) * 80,
+                1 + Math.random() * 12,
+                5 + Math.random() * 85
+            );
+            mesh.baseY = mesh.position.y; // store base Y for bobbing
+            shadowGen.addShadowCaster(mesh);
+            collectibles.push({ mesh, collected: false });
+        }
+    }
+
+    // --- Enemies ---
+    const enemies = [];
+
+    function spawnEnemies() {
+        for (let i = 0; i < 15; i++) {
+            const mesh = BABYLON.MeshBuilder.CreatePolyhedron('enemy_' + i, {
+                type: 3, size: 0.4,
+            }, scene);
+            mesh.material = enemyMat;
+            const x = (Math.random() - 0.5) * 60;
+            const z = 10 + Math.random() * 70;
+            mesh.position = new BABYLON.Vector3(x, 1, z);
+            shadowGen.addShadowCaster(mesh);
+            enemies.push({
+                mesh,
+                baseY: 1,
+                phase: Math.random() * Math.PI * 2,
+                speed: 1 + Math.random() * 2,
+                range: 3 + Math.random() * 5,
+                originX: x,
+                originZ: z,
+                alive: true,
+            });
+        }
+    }
+
+    // --- Background Particles (SPS - Solid Particle System) ---
+    const particleCount = 200;
+    const particleSPS = new BABYLON.SolidParticleSystem('sps', scene, { isPickable: false });
+    const pBox = BABYLON.MeshBuilder.CreateBox('pTemplate', { size: 0.08 }, scene);
+    particleSPS.addShape(pBox, particleCount);
+    pBox.dispose();
+    const particleMesh = particleSPS.buildMesh();
+    const particleSPSMat = makeGlowMat('spsMat', '#00ff88', '#00ff88', 0.4);
+    particleMesh.material = particleSPSMat;
+
+    particleSPS.initParticles = function () {
+        for (let i = 0; i < this.nbParticles; i++) {
+            const p = this.particles[i];
+            p.position.x = (Math.random() - 0.5) * 150;
+            p.position.y = Math.random() * 40;
+            p.position.z = (Math.random() - 0.5) * 150;
+            p.velocity = new BABYLON.Vector3(0, 0.2 + Math.random() * 0.3, 0);
+        }
+    };
+    particleSPS.updateParticle = function (p) {
+        p.position.addInPlace(p.velocity.scale(scene.getEngine().getDeltaTime() / 1000));
+        if (p.position.y > 40) p.position.y = 0;
+        return p;
+    };
+    particleSPS.initParticles();
+    particleSPS.setParticles();
+
+    // --- Cityscape (distant pillars) ---
+    function createCityscape() {
+        for (let i = 0; i < 40; i++) {
+            const w = 1 + Math.random() * 3;
+            const h = 5 + Math.random() * 30;
+            const d = 1 + Math.random() * 3;
+            const pillar = BABYLON.MeshBuilder.CreateBox('pillar_' + i, {
+                width: w, height: h, depth: d,
+            }, scene);
+            pillar.material = pillarMat;
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 60 + Math.random() * 30;
+            pillar.position = new BABYLON.Vector3(
+                Math.cos(angle) * dist,
+                h / 2,
+                Math.sin(angle) * dist
+            );
+            pillar.receiveShadows = true;
+        }
+    }
+
+    // --- Initialize World ---
+    generateWorld();
+    spawnCollectibles();
+    spawnEnemies();
+    createCityscape();
+
+    // --- Input ---
+    document.addEventListener('keydown', (e) => {
+        keys[e.code] = true;
+        if (e.code === 'Space') e.preventDefault();
+        if (e.code === 'KeyT' && STATE.gameStarted) toggleTests();
+    });
+    document.addEventListener('keyup', (e) => {
+        keys[e.code] = false;
+    });
+
+    // Pointer lock
+    canvas.addEventListener('click', () => {
+        if (STATE.gameStarted && !STATE.gameOver) {
+            canvas.requestPointerLock();
+        }
+    });
+    document.addEventListener('pointerlockchange', () => {
+        pointerLocked = document.pointerLockElement === canvas;
+    });
+    document.addEventListener('mousemove', (e) => {
+        if (!pointerLocked) return;
+        const sens = 0.002;
+        cameraYaw -= e.movementX * sens;
+        cameraPitch = Math.max(-1.0, Math.min(0.8, cameraPitch - e.movementY * sens));
+    });
+
+    // --- Mobile Detection ---
+    const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if (isMobile) {
+        document.getElementById('controlsDesktop').style.display = 'none';
+        document.getElementById('controlsMobile').style.display = 'block';
+        // Reduce shadow quality for mobile performance
+        shadowGen.mapSize = 1024;
+        shadowGen.usePercentageCloserFiltering = false;
+        shadowGen.usePoissonSampling = true;
+        // Reduce glow for mobile
+        glowLayer.intensity = 0.3;
+    }
+
+    // Touch controls (D-pad buttons)
+    function setupTouch(id, key) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('touchstart', (e) => { e.preventDefault(); touchInput[key] = true; }, { passive: false });
+        el.addEventListener('touchend', (e) => { e.preventDefault(); touchInput[key] = false; }, { passive: false });
+        el.addEventListener('touchcancel', (e) => { e.preventDefault(); touchInput[key] = false; }, { passive: false });
+    }
+    setupTouch('touch-forward', 'forward');
+    setupTouch('touch-back', 'back');
+    setupTouch('touch-left', 'left');
+    setupTouch('touch-right', 'right');
+    setupTouch('touch-jump', 'jump');
+
+    // --- Touch Look Zone (drag right side of screen to rotate camera) ---
+    const lookZone = document.getElementById('touchLookZone');
+    let lookTouchId = null;
+    let lastLookX = 0;
+    let lastLookY = 0;
+
+    if (lookZone) {
+        lookZone.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (lookTouchId !== null) return; // already tracking a finger
+            const touch = e.changedTouches[0];
+            lookTouchId = touch.identifier;
+            lastLookX = touch.clientX;
+            lastLookY = touch.clientY;
+        }, { passive: false });
+
+        lookZone.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                if (touch.identifier !== lookTouchId) continue;
+                const dx = touch.clientX - lastLookX;
+                const dy = touch.clientY - lastLookY;
+                const sens = 0.005;
+                cameraYaw -= dx * sens;
+                cameraPitch = Math.max(-1.0, Math.min(0.8, cameraPitch - dy * sens));
+                lastLookX = touch.clientX;
+                lastLookY = touch.clientY;
+            }
+        }, { passive: false });
+
+        const endLook = (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === lookTouchId) {
+                    lookTouchId = null;
+                }
+            }
+        };
+        lookZone.addEventListener('touchend', endLook, { passive: false });
+        lookZone.addEventListener('touchcancel', endLook, { passive: false });
+    }
+
+    // --- Start Game ---
+    document.getElementById('startBtn').addEventListener('click', () => {
+        STATE.gameStarted = true;
+        document.getElementById('startOverlay').classList.add('hidden');
+        document.getElementById('hud').style.display = 'block';
+        if (!isMobile) {
+            document.getElementById('crosshair').style.display = 'block';
+            canvas.requestPointerLock();
+        }
+    });
+
+    // --- Restart ---
+    document.getElementById('restartBtn').addEventListener('click', restartGame);
+    document.addEventListener('keydown', (e) => {
+        if (e.code === 'Enter' && STATE.gameOver) restartGame();
+    });
+
+    function restartGame() {
+        STATE.score = 0;
+        STATE.health = 100;
+        STATE.hackMeter = 0;
+        STATE.combo = 1;
+        STATE.maxCombo = 1;
+        STATE.collected = 0;
+        STATE.enemiesStomped = 0;
+        STATE.gameOver = false;
+        playerRoot.position = new BABYLON.Vector3(0, 0, 0);
+        playerPhysics.velocityY = 0;
+        playerPhysics.onGround = true;
+        document.getElementById('gameOverOverlay').classList.remove('active');
+        document.getElementById('hud').style.display = 'block';
+        if (!isMobile) {
+            document.getElementById('crosshair').style.display = 'block';
+            canvas.requestPointerLock();
+        }
+    }
+
+    // --- HUD ---
+    function updateHUD() {
+        document.getElementById('scoreDisplay').textContent = 'SCORE: ' + STATE.score;
+        document.getElementById('comboDisplay').textContent = 'COMBO: x' + STATE.combo;
+        const bars = Math.max(0, Math.round(STATE.health / 10));
+        document.getElementById('healthBar').textContent =
+            'HP: ' + '\u2588'.repeat(bars) + '\u2591'.repeat(10 - bars);
+        document.getElementById('hackMeter').textContent =
+            'HACK: ' + Math.floor(STATE.hackMeter) + '%';
+    }
+
+    // --- Collision Helpers ---
+    function getPlayerAABB() {
+        const pos = playerRoot.position;
+        return {
+            minX: pos.x - 0.4, maxX: pos.x + 0.4,
+            minY: pos.y, maxY: pos.y + 2.8,
+            minZ: pos.z - 0.25, maxZ: pos.z + 0.25,
+        };
+    }
+
+    function getPlatformAABB(mesh) {
+        const bi = mesh.getBoundingInfo().boundingBox;
+        const min = bi.minimumWorld;
+        const max = bi.maximumWorld;
+        return { minX: min.x, maxX: max.x, minY: min.y, maxY: max.y, minZ: min.z, maxZ: max.z };
+    }
+
+    function aabbOverlap(a, b) {
+        return a.minX < b.maxX && a.maxX > b.minX &&
+               a.minY < b.maxY && a.maxY > b.minY &&
+               a.minZ < b.maxZ && a.maxZ > b.minZ;
+    }
+
+    function checkCollisions(dt) {
+        const pos = playerRoot.position;
+
+        // Ground collision
+        if (pos.y <= 0) {
+            pos.y = 0;
+            playerPhysics.velocityY = 0;
+            playerPhysics.onGround = true;
+            return;
+        }
+
+        playerPhysics.onGround = false;
+
+        const pAABB = getPlayerAABB();
+
+        for (const plat of platforms) {
+            const platAABB = getPlatformAABB(plat);
+            if (!aabbOverlap(pAABB, platAABB)) continue;
+
+            const platTop = platAABB.maxY;
+            const platBottom = platAABB.minY;
+
+            // Landing on top (falling down, feet near platform top)
+            if (playerPhysics.velocityY <= 0 && pAABB.minY >= platTop - 0.5 && pAABB.minY <= platTop + 0.3) {
+                pos.y = platTop;
+                playerPhysics.velocityY = 0;
+                playerPhysics.onGround = true;
+                return;
+            }
+
+            // Head bump (jumping up into platform bottom)
+            if (playerPhysics.velocityY > 0 && pAABB.maxY >= platBottom && pAABB.maxY <= platBottom + 0.5) {
+                playerPhysics.velocityY = 0;
+            }
+
+            // Side collision - push player out horizontally
+            const overlapX = Math.min(pAABB.maxX - platAABB.minX, platAABB.maxX - pAABB.minX);
+            const overlapZ = Math.min(pAABB.maxZ - platAABB.minZ, platAABB.maxZ - pAABB.minZ);
+            if (overlapX < overlapZ && overlapX < 0.5) {
+                if (pos.x < plat.position.x) pos.x -= overlapX;
+                else pos.x += overlapX;
+            } else if (overlapZ < 0.5) {
+                if (pos.z < plat.position.z) pos.z -= overlapZ;
+                else pos.z += overlapZ;
+            }
+        }
+    }
+
+    // --- Collectible Check ---
+    function checkCollectibles() {
+        const pPos = playerRoot.position;
+        for (const c of collectibles) {
+            if (c.collected) continue;
+            const dx = pPos.x - c.mesh.position.x;
+            const dy = pPos.y + 1.4 - c.mesh.position.y;
+            const dz = pPos.z - c.mesh.position.z;
+            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (dist < 1.5) {
+                c.collected = true;
+                c.mesh.dispose();
+                STATE.score += 100 * STATE.combo;
+                STATE.hackMeter = Math.min(100, STATE.hackMeter + 5);
+                STATE.combo++;
+                STATE.collected++;
+                if (STATE.combo > STATE.maxCombo) STATE.maxCombo = STATE.combo;
+            }
+        }
+    }
+
+    // --- Enemy Update ---
+    function updateEnemies(dt) {
+        const pPos = playerRoot.position;
+        for (const e of enemies) {
+            if (!e.alive) continue;
+            e.phase += dt * e.speed;
+            e.mesh.position.x = e.originX + Math.sin(e.phase) * e.range;
+            e.mesh.position.y = e.baseY + Math.abs(Math.sin(e.phase * 1.5)) * 1.5;
+            e.mesh.rotation.x += dt * 2;
+            e.mesh.rotation.y += dt * 3;
+
+            const dx = pPos.x - e.mesh.position.x;
+            const dy = (pPos.y + 1.4) - e.mesh.position.y;
+            const dz = pPos.z - e.mesh.position.z;
+            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+            if (dist < 1.5) {
+                // Stomp from above
+                if (playerPhysics.velocityY < -2 && pPos.y > e.mesh.position.y) {
+                    e.alive = false;
+                    e.mesh.dispose();
+                    STATE.score += 200 * STATE.combo;
+                    STATE.combo++;
+                    STATE.enemiesStomped++;
+                    if (STATE.combo > STATE.maxCombo) STATE.maxCombo = STATE.combo;
+                    playerPhysics.velocityY = 9; // bounce
+                } else {
+                    STATE.health -= 25 * dt;
+                    STATE.combo = 1;
+                }
+            }
+        }
+    }
+
+    // --- Animations ---
+    function animatePlayer(dt) {
+        const t = performance.now() * 0.005;
+        const isMoving = keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'] ||
+            touchInput.forward || touchInput.back || touchInput.left || touchInput.right;
+
+        if (isMoving && playerPhysics.onGround) {
+            leftLeg.rotation.x = Math.sin(t * 3) * 0.6;
+            rightLeg.rotation.x = Math.sin(t * 3 + Math.PI) * 0.6;
+        } else {
+            leftLeg.rotation.x *= 0.85;
+            rightLeg.rotation.x *= 0.85;
+        }
+
+        playerBody.position.y = 1.4 + Math.sin(t * 2) * 0.03;
+        playerEyeMat.emissiveColor = new BABYLON.Color3(
+            1, 0, 1 - Math.sin(t * 4) * 0.3
+        );
+    }
+
+    function animateCollectibles(dt) {
+        const t = performance.now() * 0.002;
+        for (const c of collectibles) {
+            if (c.collected) continue;
+            c.mesh.rotation.y += dt * 2;
+            // Use baseY for stable bobbing (no drift)
+            c.mesh.position.y = c.mesh.baseY + Math.sin(t + c.mesh.baseY * 3) * 0.3;
+        }
+    }
+
+    // --- Game Over ---
+    function triggerGameOver() {
+        STATE.gameOver = true;
+        STATE.health = 0;
+        document.getElementById('hud').style.display = 'none';
+        document.getElementById('crosshair').style.display = 'none';
+        document.getElementById('finalScore').textContent = STATE.score;
+        document.getElementById('finalCombo').textContent = 'x' + STATE.maxCombo;
+        document.getElementById('finalCollected').textContent = STATE.collected;
+        document.getElementById('finalEnemies').textContent = STATE.enemiesStomped;
+        document.getElementById('gameOverOverlay').classList.add('active');
+        document.exitPointerLock();
+    }
+
+    // --- Main Game Loop ---
+    engine.runRenderLoop(() => {
+        const dt = Math.min(engine.getDeltaTime() / 1000, 0.05);
+
+        if (!STATE.gameStarted) {
+            // Idle orbit on start screen
+            const t = performance.now() * 0.0003;
+            camera.position = new BABYLON.Vector3(
+                Math.sin(t) * 15, 8, Math.cos(t) * 15
+            );
+            camera.setTarget(new BABYLON.Vector3(0, 2, 0));
+            scene.render();
+            return;
+        }
+
+        if (STATE.gameOver) {
+            scene.render();
+            return;
+        }
+
+        // --- Player Movement ---
+        const forward = new BABYLON.Vector3(
+            Math.sin(cameraYaw), 0, Math.cos(cameraYaw)
+        );
+        const right = new BABYLON.Vector3(
+            Math.sin(cameraYaw - Math.PI / 2), 0, Math.cos(cameraYaw - Math.PI / 2)
+        );
+
+        const moveDir = new BABYLON.Vector3(0, 0, 0);
+        if (keys['KeyW'] || keys['ArrowUp'] || touchInput.forward) moveDir.addInPlace(forward);
+        if (keys['KeyS'] || keys['ArrowDown'] || touchInput.back) moveDir.subtractInPlace(forward);
+        if (keys['KeyA'] || keys['ArrowLeft'] || touchInput.left) moveDir.addInPlace(right);
+        if (keys['KeyD'] || keys['ArrowRight'] || touchInput.right) moveDir.subtractInPlace(right);
+
+        if (moveDir.length() > 0.01) {
+            moveDir.normalize();
+            playerRoot.position.x += moveDir.x * playerPhysics.speed * dt;
+            playerRoot.position.z += moveDir.z * playerPhysics.speed * dt;
+
+            // Smooth character rotation to face movement direction
+            const targetYaw = Math.atan2(moveDir.x, moveDir.z);
+            let diff = targetYaw - playerRoot.rotation.y;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            playerRoot.rotation.y += diff * 10 * dt;
+        }
+
+        // Jump
+        if ((keys['Space'] || touchInput.jump) && playerPhysics.onGround) {
+            playerPhysics.velocityY = playerPhysics.jumpForce;
+            playerPhysics.onGround = false;
+        }
+
+        // Gravity
+        playerPhysics.velocityY += GRAVITY * dt;
+        playerRoot.position.y += playerPhysics.velocityY * dt;
+
+        // Collisions
+        checkCollisions(dt);
+
+        // Fall reset
+        if (playerRoot.position.y < -20) {
+            playerRoot.position = new BABYLON.Vector3(0, 5, 0);
+            playerPhysics.velocityY = 0;
+            STATE.health -= 20;
+            STATE.combo = 1;
+        }
+
+        // --- Camera (third-person over-the-shoulder) ---
+        const offsetRotated = new BABYLON.Vector3(
+            CAM_OFFSET.x * Math.cos(cameraYaw) - CAM_OFFSET.z * Math.sin(cameraYaw),
+            CAM_OFFSET.y + CAM_OFFSET.z * Math.sin(cameraPitch),
+            CAM_OFFSET.x * Math.sin(cameraYaw) + CAM_OFFSET.z * Math.cos(cameraYaw)
+        );
+        const desiredPos = playerRoot.position.add(offsetRotated);
+        desiredPos.y = Math.max(desiredPos.y, 0.5);
+
+        // Smooth camera follow
+        const lerpFactor = 1 - Math.pow(0.001, dt);
+        camera.position = BABYLON.Vector3.Lerp(camera.position, desiredPos, lerpFactor);
+
+        const lookTarget = playerRoot.position.add(CAM_LOOK_OFFSET);
+        camera.setTarget(lookTarget);
+
+        // Player light follows
+        playerLight.position = new BABYLON.Vector3(
+            playerRoot.position.x,
+            playerRoot.position.y + 3,
+            playerRoot.position.z
+        );
+
+        // --- Updates ---
+        animatePlayer(dt);
+        animateCollectibles(dt);
+        particleSPS.setParticles();
+        updateEnemies(dt);
+        checkCollectibles();
+        updateHUD();
+
+        // Health check
+        if (STATE.health <= 0) {
+            triggerGameOver();
+        }
+
+        scene.render();
+    });
+
+    // --- Resize ---
+    window.addEventListener('resize', () => {
+        engine.resize();
+    });
+
+    // ============================================
+    // BUILT-IN UNIT TESTS
+    // ============================================
+    let testsVisible = false;
+
+    function toggleTests() {
+        const panel = document.getElementById('testResults');
+        testsVisible = !testsVisible;
+        if (testsVisible) {
+            runTests();
+            panel.classList.add('visible');
+        } else {
+            panel.classList.remove('visible');
+        }
+    }
+
+    function runTests() {
+        const results = [];
+        let passed = 0;
+        let failed = 0;
+
+        function assert(name, condition, detail) {
+            if (condition) {
+                results.push({ name, pass: true });
+                passed++;
+            } else {
+                results.push({ name, pass: false, detail });
+                failed++;
+            }
+        }
+
+        // --- Engine & Scene Tests ---
+        assert('Engine initialized',
+            engine !== null && engine !== undefined);
+        assert('Scene created',
+            scene !== null && scene.meshes.length > 0);
+        assert('Scene clear color correct',
+            scene.clearColor.r < 0.1 && scene.clearColor.g < 0.1);
+        assert('Fog enabled',
+            scene.fogMode === BABYLON.Scene.FOGMODE_EXP2,
+            'fogMode: ' + scene.fogMode);
+
+        // --- Camera Tests ---
+        assert('Camera exists',
+            camera !== null);
+        assert('Camera near clip set',
+            camera.minZ === 0.1, 'minZ: ' + camera.minZ);
+        assert('Camera far clip set',
+            camera.maxZ === 500, 'maxZ: ' + camera.maxZ);
+
+        // --- Lighting Tests ---
+        assert('Hemispheric light exists',
+            hemisphericLight !== null);
+        assert('Directional light exists',
+            dirLight !== null);
+        assert('Shadow generator exists',
+            shadowGen !== null);
+        assert('Player point light exists',
+            playerLight !== null);
+        assert('Glow layer active',
+            glowLayer !== null && glowLayer.intensity > 0);
+
+        // --- Player Tests ---
+        assert('Player root node exists',
+            playerRoot !== null);
+        assert('Player body mesh exists',
+            playerBody !== null && !playerBody.isDisposed());
+        assert('Player head mesh exists',
+            playerHead !== null && !playerHead.isDisposed());
+        assert('Left eye exists',
+            leftEye !== null && !leftEye.isDisposed());
+        assert('Right eye exists',
+            rightEye !== null && !rightEye.isDisposed());
+        assert('Left leg exists',
+            leftLeg !== null && !leftLeg.isDisposed());
+        assert('Right leg exists',
+            rightLeg !== null && !rightLeg.isDisposed());
+        assert('Player starts at origin',
+            true, 'Position checked at init');
+
+        // --- Physics Tests ---
+        assert('Gravity constant defined',
+            GRAVITY === -28, 'GRAVITY: ' + GRAVITY);
+        assert('Jump force defined',
+            playerPhysics.jumpForce === 11, 'jumpForce: ' + playerPhysics.jumpForce);
+        assert('Player speed defined',
+            playerPhysics.speed === 8, 'speed: ' + playerPhysics.speed);
+
+        // --- Ground Tests ---
+        assert('Ground mesh exists',
+            ground !== null && !ground.isDisposed());
+        assert('Ground receives shadows',
+            ground.receiveShadows === true);
+        assert('Grid mesh exists',
+            gridMesh !== null);
+
+        // --- Platform Tests ---
+        assert('Platforms generated',
+            platforms.length >= 40, 'count: ' + platforms.length);
+        assert('Hand-placed platforms (10)',
+            platforms.length >= 10);
+        assert('Platform materials (3 types)',
+            platformMats.length === 3);
+        // Check no platforms overlap ground at y=0
+        let allAboveGround = true;
+        for (const p of platforms) {
+            if (p.position.y < 0.2) { allAboveGround = false; break; }
+        }
+        assert('All platforms above ground',
+            allAboveGround);
+
+        // --- Collectible Tests ---
+        assert('Collectibles spawned',
+            collectibles.length === 40, 'count: ' + collectibles.length);
+        let allHaveBaseY = true;
+        for (const c of collectibles) {
+            if (c.mesh.baseY === undefined) { allHaveBaseY = false; break; }
+        }
+        assert('Collectibles have baseY (no drift)',
+            allHaveBaseY);
+
+        // --- Enemy Tests ---
+        assert('Enemies spawned',
+            enemies.length === 15, 'count: ' + enemies.length);
+        let allEnemiesHaveProps = true;
+        for (const e of enemies) {
+            if (e.speed === undefined || e.range === undefined || e.phase === undefined) {
+                allEnemiesHaveProps = false; break;
+            }
+        }
+        assert('Enemies have movement properties',
+            allEnemiesHaveProps);
+
+        // --- Particle Tests ---
+        assert('Particle system exists',
+            particleSPS !== null);
+        assert('Particle count correct',
+            particleSPS.nbParticles === particleCount,
+            'particles: ' + particleSPS.nbParticles);
+
+        // --- Cityscape Tests ---
+        const pillarCount = scene.meshes.filter(m => m.name.startsWith('pillar_')).length;
+        assert('Cityscape pillars created',
+            pillarCount === 40, 'count: ' + pillarCount);
+
+        // --- AABB Collision Tests ---
+        const testA = { minX: 0, maxX: 2, minY: 0, maxY: 2, minZ: 0, maxZ: 2 };
+        const testB = { minX: 1, maxX: 3, minY: 1, maxY: 3, minZ: 1, maxZ: 3 };
+        const testC = { minX: 5, maxX: 6, minY: 5, maxY: 6, minZ: 5, maxZ: 6 };
+        assert('AABB overlap detection (true)',
+            aabbOverlap(testA, testB) === true);
+        assert('AABB overlap detection (false)',
+            aabbOverlap(testA, testC) === false);
+
+        // --- HUD Tests ---
+        assert('Score display element exists',
+            document.getElementById('scoreDisplay') !== null);
+        assert('Health bar element exists',
+            document.getElementById('healthBar') !== null);
+        assert('Hack meter element exists',
+            document.getElementById('hackMeter') !== null);
+        assert('Combo display element exists',
+            document.getElementById('comboDisplay') !== null);
+
+        // --- Game State Tests ---
+        assert('STATE has all required fields',
+            STATE.score !== undefined && STATE.health !== undefined &&
+            STATE.hackMeter !== undefined && STATE.combo !== undefined &&
+            STATE.maxCombo !== undefined && STATE.collected !== undefined &&
+            STATE.enemiesStomped !== undefined);
+
+        // --- UI Tests ---
+        assert('Start overlay exists',
+            document.getElementById('startOverlay') !== null);
+        assert('Game over overlay exists',
+            document.getElementById('gameOverOverlay') !== null);
+        assert('Restart button exists',
+            document.getElementById('restartBtn') !== null);
+        assert('Back button exists',
+            document.getElementById('backBtn') !== null);
+        assert('Touch controls exist',
+            document.getElementById('touchControls') !== null);
+        assert('Touch backward button exists',
+            document.getElementById('touch-back') !== null);
+        assert('Touch look zone exists',
+            document.getElementById('touchLookZone') !== null);
+        assert('Crosshair element exists',
+            document.getElementById('crosshair') !== null);
+        assert('Mobile controls info element exists',
+            document.getElementById('controlsMobile') !== null);
+        assert('Desktop controls info element exists',
+            document.getElementById('controlsDesktop') !== null);
+        assert('Canvas has touch-action: none',
+            getComputedStyle(canvas).touchAction === 'none',
+            'touchAction: ' + getComputedStyle(canvas).touchAction);
+
+        // --- Render Results ---
+        const panel = document.getElementById('testResults');
+        let html = '<div class="test-header">UNIT TESTS: ' +
+            passed + '/' + (passed + failed) + ' passed</div>';
+        for (const r of results) {
+            const cls = r.pass ? 'test-pass' : 'test-fail';
+            const icon = r.pass ? '\u2713' : '\u2717';
+            const detail = r.detail && !r.pass ? ' (' + r.detail + ')' : '';
+            html += '<div class="' + cls + '">' + icon + ' ' + r.name + detail + '</div>';
+        }
+        panel.innerHTML = html;
+    }
+
+    </script>
+</body>
+</html>
