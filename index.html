@@ -634,7 +634,7 @@
         const bosses = {
             sperring: {
                 name: 'SPERRING',
-                subtitle: 'The Mustache Flexer',
+                subtitle: 'The Ugga Bugga Barbarian',
                 x: 0,
                 y: 0,
                 width: 80,
@@ -795,7 +795,6 @@
                 optimization: { colors: ['#00ff88', '#00ffaa', '#88ffcc', '#ffffff', '#aaffee'], speed: 10, size: 5, gravity: 0.15, glow: true },
                 hack: { colors: ['#ff00ff', '#ff00aa', '#ff88ff', '#ffffff', '#dd00dd', '#ff44ff'], speed: 16, size: 7, gravity: 0.05, glow: true },
                 jump: { colors: ['#4444ff', '#6666ff', '#8888ff', '#aaaaff', '#00ffff'], speed: 7, size: 4, gravity: 0.25, glow: true },
-                dollar: { colors: ['#00aa00', '#00cc00', '#00ff00', '#88ff88', '#228822'], speed: 6, size: 14, gravity: 0.12, isText: true, textChars: ['$', '💵', '💰', '$$', '$$$'], glow: true },
                 damage: { colors: ['#ff0055', '#ff3377', '#ff5599', '#ff0000', '#ff2222'], speed: 12, size: 5, gravity: 0.15, glow: true },
                 code: { colors: ['#00ff88', '#ffffff', '#888888', '#00ffaa', '#aaffcc'], speed: 7, size: 3, gravity: 0.1, isText: true },
                 glitch: { colors: ['#00ff88', '#ff00ff', '#00ffff', '#ffff00', '#ff0088'], speed: 14, size: 8, gravity: 0, glow: true },
@@ -1189,51 +1188,51 @@
         // Sperring barks - things he shouts during the fight
         const sperringBarks = {
             spawn: [
-                '"You call that code OPTIMIZED?!"',
-                '"Time to FLEX on your architecture!"',
-                '"My mustache has more commits than you!"',
-                '"SPERRING ENTERS THE CODEBASE!"',
+                '"SPERRING SMASH PUNY MAN!"',
+                '"UGGA BUGGA! WHO DARE ENTER?!"',
+                '"MUSTACHE GROW STRONG! YOU GROW WEAK!"',
+                '"SPERRING IS HERE! TREMBLE!"',
             ],
             flex: [
-                '"FLEX! Feel the POWER of clean code!"',
-                '"These gains? Pure refactoring discipline."',
-                '"My muscles are O(1) complexity!"',
-                '"You think you can out-optimize ME?!"',
-                '"UNNNNGH! Maximum throughput!"',
-                '"Each rep is a deleted TODO!"',
-                '"THIS is what peak performance looks like!"',
+                '"FLEX! UGGGHHHH! MAXIMUM POWER!"',
+                '"THESE GAINS FROM LIFTING BOULDERS!"',
+                '"MUSCLES BIGGER THAN YOUR HEAD!"',
+                '"YOU CANNOT OUT-FLEX SPERRING!"',
+                '"UNNNNGH! FEEL THE EARTH SHAKE!"',
+                '"EVERY DAY IS ARM DAY! UGGA!"',
+                '"PEAK CAVEMAN PERFORMANCE!"',
             ],
             mustache: [
-                '"Taste the MUSTACHE of justice!"',
-                '"Handlebar BARRAGE!"',
-                '"My facial hair is my deadliest weapon!"',
-                '"Mustache attack! It\'s SUPER EFFECTIVE!"',
-                '"You can\'t dodge the \'stache!"',
+                '"TASTE THE MUSTACHE OF DOOM!"',
+                '"HANDLEBAR BARRAGE! UGGA!"',
+                '"MUSTACHE IS MIGHTIEST WEAPON!"',
+                '"HAIR ATTACK! YOU NO DODGE THIS!"',
+                '"\'STACHE FURY! BUGGA BUGGA!"',
             ],
             slam: [
-                '"GROUND POUND! Like a stack overflow!"',
-                '"SLAAAAM! That\'s a force push to main!"',
-                '"Coming DOWN like a production deploy!"',
-                '"Gravity is just another dependency!"',
-                '"SEISMIC COMMIT!"',
+                '"GROUND GO BOOM! UGGA BUGGA!"',
+                '"SLAAAAM! EARTH OBEY SPERRING!"',
+                '"SPERRING COME DOWN LIKE METEOR!"',
+                '"GRAVITY IS SPERRING FRIEND!"',
+                '"SEISMIC STOMP! FEEL THAT?!"',
             ],
             hit: [
-                '"Hah! Felt that one, didn\'t ya?!"',
-                '"That\'s what you get for skipping code review!"',
-                '"Should\'ve written unit tests!"',
+                '"HAH! PUNY MAN FELT THAT!"',
+                '"THAT WHAT YOU GET! UGGA!"',
+                '"SPERRING TOO STRONG FOR YOU!"',
             ],
             damaged: [
-                '"Is that... is that a BUG in my armor?!"',
-                '"You think a little damage will stop SPERRING?!"',
-                '"My mustache absorbs the pain!"',
-                '"OOF! Lucky shot, developer!"',
-                '"I\'ll refactor your FACE for that!"',
+                '"OOF! ...THAT ACTUALLY HURT?!"',
+                '"YOU THINK SCRATCH STOP SPERRING?!"',
+                '"MUSTACHE ABSORB THE PAIN! UGGA!"',
+                '"LUCKY HIT! NO MORE LUCKY!"',
+                '"SPERRING SMASH YOU HARDER NOW!"',
             ],
             lowHealth: [
-                '"I\'m not... done... flexing..."',
-                '"My code... my beautiful code..."',
-                '"The mustache... it weakens..."',
-                '"You haven\'t seen my FINAL FORM!"',
+                '"SPERRING... NOT... DONE... FLEXING..."',
+                '"UGGA... BUGGA... *wheeze*..."',
+                '"THE MUSTACHE... IT WEAKENS..."',
+                '"YOU NO SEE FINAL FORM YET!"',
             ]
         };
 
@@ -2040,7 +2039,7 @@
                 raanman.stretch = 1.5;
                 createParticles(raanman.x + 15, raanman.y, 'jump', 20);
                 createParticles(raanman.x + 15, raanman.y, 'smoke', 8);
-                createParticles(raanman.x + 15, raanman.y + 20, 'dollar', 8); // Money flies out on jump!
+                createParticles(raanman.x + 15, raanman.y + 20, 'spark', 5);
                 screenShake = 5;
 
                 if (raanman.jumpsLeft === 0) {
@@ -2048,7 +2047,7 @@
                     createParticleBurst(raanman.x + 15, raanman.y, 'optimization', 30, 'ring');
                     createParticles(raanman.x + 15, raanman.y, 'glitch', 15);
                     createParticles(raanman.x + 15, raanman.y, 'spark', 25);
-                    createParticles(raanman.x + 15, raanman.y, 'dollar', 15); // Even more money on double jump!
+                    createParticles(raanman.x + 15, raanman.y, 'spark', 8);
                     screenFlash = { intensity: 0.5, color: '#00ff88' };
                     screenShake = 10;
                     glitchIntensity = 0.3;
