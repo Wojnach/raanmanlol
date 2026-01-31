@@ -634,7 +634,7 @@
         const bosses = {
             sperring: {
                 name: 'SPERRING',
-                subtitle: 'The Mustache Flexer',
+                subtitle: 'The Ugga Bugga Barbarian',
                 x: 0,
                 y: 0,
                 width: 80,
@@ -795,7 +795,6 @@
                 optimization: { colors: ['#00ff88', '#00ffaa', '#88ffcc', '#ffffff', '#aaffee'], speed: 10, size: 5, gravity: 0.15, glow: true },
                 hack: { colors: ['#ff00ff', '#ff00aa', '#ff88ff', '#ffffff', '#dd00dd', '#ff44ff'], speed: 16, size: 7, gravity: 0.05, glow: true },
                 jump: { colors: ['#4444ff', '#6666ff', '#8888ff', '#aaaaff', '#00ffff'], speed: 7, size: 4, gravity: 0.25, glow: true },
-                dollar: { colors: ['#00aa00', '#00cc00', '#00ff00', '#88ff88', '#228822'], speed: 6, size: 14, gravity: 0.12, isText: true, textChars: ['$', '💵', '💰', '$$', '$$$'], glow: true },
                 damage: { colors: ['#ff0055', '#ff3377', '#ff5599', '#ff0000', '#ff2222'], speed: 12, size: 5, gravity: 0.15, glow: true },
                 code: { colors: ['#00ff88', '#ffffff', '#888888', '#00ffaa', '#aaffcc'], speed: 7, size: 3, gravity: 0.1, isText: true },
                 glitch: { colors: ['#00ff88', '#ff00ff', '#00ffff', '#ffff00', '#ff0088'], speed: 14, size: 8, gravity: 0, glow: true },
@@ -1144,6 +1143,9 @@
             boss.health = boss.maxHealth;
             boss.phase = 0;
             boss.attackTimer = 60;
+            boss.hasBarked = false;
+            boss.lowHealthBarked = false;
+            bossBark = { text: '', timer: 0, opacity: 1 };
             // Spawn boss off-screen to the right (beyond visible area)
             boss.x = raanman.x + canvas.width + 100;
             boss.y = type === 'sperring' ? 350 : 420;
@@ -1183,9 +1185,83 @@
             }
         }
 
+        // Sperring barks - things he shouts during the fight
+        const sperringBarks = {
+            spawn: [
+                '"SPERRING SMASH PUNY MAN!"',
+                '"UGGA BUGGA! WHO DARE ENTER?!"',
+                '"MUSTACHE GROW STRONG! YOU GROW WEAK!"',
+                '"SPERRING IS HERE! TREMBLE!"',
+            ],
+            flex: [
+                '"FLEX! UGGGHHHH! MAXIMUM POWER!"',
+                '"THESE GAINS FROM LIFTING BOULDERS!"',
+                '"MUSCLES BIGGER THAN YOUR HEAD!"',
+                '"YOU CANNOT OUT-FLEX SPERRING!"',
+                '"UNNNNGH! FEEL THE EARTH SHAKE!"',
+                '"EVERY DAY IS ARM DAY! UGGA!"',
+                '"PEAK CAVEMAN PERFORMANCE!"',
+            ],
+            mustache: [
+                '"TASTE THE MUSTACHE OF DOOM!"',
+                '"HANDLEBAR BARRAGE! UGGA!"',
+                '"MUSTACHE IS MIGHTIEST WEAPON!"',
+                '"HAIR ATTACK! YOU NO DODGE THIS!"',
+                '"\'STACHE FURY! BUGGA BUGGA!"',
+            ],
+            slam: [
+                '"GROUND GO BOOM! UGGA BUGGA!"',
+                '"SLAAAAM! EARTH OBEY SPERRING!"',
+                '"SPERRING COME DOWN LIKE METEOR!"',
+                '"GRAVITY IS SPERRING FRIEND!"',
+                '"SEISMIC STOMP! FEEL THAT?!"',
+            ],
+            hit: [
+                '"HAH! PUNY MAN FELT THAT!"',
+                '"THAT WHAT YOU GET! UGGA!"',
+                '"SPERRING TOO STRONG FOR YOU!"',
+            ],
+            damaged: [
+                '"OOF! ...THAT ACTUALLY HURT?!"',
+                '"YOU THINK SCRATCH STOP SPERRING?!"',
+                '"MUSTACHE ABSORB THE PAIN! UGGA!"',
+                '"LUCKY HIT! NO MORE LUCKY!"',
+                '"SPERRING SMASH YOU HARDER NOW!"',
+            ],
+            lowHealth: [
+                '"SPERRING... NOT... DONE... FLEXING..."',
+                '"UGGA... BUGGA... *wheeze*..."',
+                '"THE MUSTACHE... IT WEAKENS..."',
+                '"YOU NO SEE FINAL FORM YET!"',
+            ]
+        };
+
+        // Boss bark state
+        let bossBark = { text: '', timer: 0, opacity: 1 };
+
+        function showBossBark(category) {
+            const barks = sperringBarks[category];
+            if (!barks || barks.length === 0) return;
+            bossBark.text = barks[Math.floor(Math.random() * barks.length)];
+            bossBark.timer = 120; // ~2 seconds at 60fps
+            bossBark.opacity = 1;
+        }
+
         function updateSperring(boss) {
             // Sperring flexes at things - creating shockwaves
             boss.flexPower = Math.sin(time * 0.1) * 0.5 + 0.5;
+
+            // Spawn bark (only once)
+            if (!boss.hasBarked) {
+                boss.hasBarked = true;
+                showBossBark('spawn');
+            }
+
+            // Low health barks
+            if (boss.health <= boss.maxHealth * 0.25 && !boss.lowHealthBarked) {
+                boss.lowHealthBarked = true;
+                showBossBark('lowHealth');
+            }
 
             // Move toward player
             const dx = raanman.x - boss.x;
@@ -1202,6 +1278,7 @@
                     // Flex shockwave
                     createFlexShockwave(boss);
                     boss.attackTimer = 90;
+                    if (bossBark.timer <= 0) showBossBark('flex');
                 } else if (boss.phase === 1) {
                     // Mustache projectiles
                     for (let i = -2; i <= 2; i++) {
@@ -1216,10 +1293,12 @@
                         });
                     }
                     boss.attackTimer = 60;
+                    if (bossBark.timer <= 0) showBossBark('mustache');
                 } else {
                     // Jump slam
                     boss.vy = -20;
                     boss.attackTimer = 120;
+                    if (bossBark.timer <= 0) showBossBark('slam');
                 }
 
                 screenShake = 10;
@@ -1640,7 +1719,51 @@
                 ctx.fillRect(x - 20, y, 15, 50);
                 ctx.fillRect(x + 5, y, 15, 50);
 
-            } else if (boss.name === 'SYDNEY') {
+            }
+
+            // Boss bark speech bubble (renders for any boss with active bark)
+            if (bossBark.timer > 0) {
+                bossBark.timer--;
+                bossBark.opacity = Math.min(1, bossBark.timer / 20);
+                const barkX = x;
+                const barkY = y - boss.height - 30;
+
+                ctx.save();
+                ctx.globalAlpha = bossBark.opacity;
+
+                // Speech bubble background
+                ctx.font = 'bold 13px Courier New';
+                const textWidth = ctx.measureText(bossBark.text).width;
+                const padding = 10;
+                const bubbleW = textWidth + padding * 2;
+                const bubbleH = 28;
+
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+                ctx.beginPath();
+                ctx.roundRect(barkX - bubbleW/2, barkY - bubbleH/2, bubbleW, bubbleH, 6);
+                ctx.fill();
+                ctx.strokeStyle = boss.color || '#ff8800';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                // Speech bubble pointer
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+                ctx.beginPath();
+                ctx.moveTo(barkX - 6, barkY + bubbleH/2);
+                ctx.lineTo(barkX, barkY + bubbleH/2 + 10);
+                ctx.lineTo(barkX + 6, barkY + bubbleH/2);
+                ctx.fill();
+
+                // Text
+                ctx.fillStyle = boss.color || '#ff8800';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(bossBark.text, barkX, barkY);
+
+                ctx.restore();
+            }
+
+            if (boss.name === 'SYDNEY') {
                 // Sydney in a BMW M50
 
                 // Car body
@@ -1916,7 +2039,7 @@
                 raanman.stretch = 1.5;
                 createParticles(raanman.x + 15, raanman.y, 'jump', 20);
                 createParticles(raanman.x + 15, raanman.y, 'smoke', 8);
-                createParticles(raanman.x + 15, raanman.y + 20, 'dollar', 8); // Money flies out on jump!
+                createParticles(raanman.x + 15, raanman.y + 20, 'spark', 5);
                 screenShake = 5;
 
                 if (raanman.jumpsLeft === 0) {
@@ -1924,7 +2047,7 @@
                     createParticleBurst(raanman.x + 15, raanman.y, 'optimization', 30, 'ring');
                     createParticles(raanman.x + 15, raanman.y, 'glitch', 15);
                     createParticles(raanman.x + 15, raanman.y, 'spark', 25);
-                    createParticles(raanman.x + 15, raanman.y, 'dollar', 15); // Even more money on double jump!
+                    createParticles(raanman.x + 15, raanman.y, 'spark', 8);
                     screenFlash = { intensity: 0.5, color: '#00ff88' };
                     screenShake = 10;
                     glitchIntensity = 0.3;
@@ -2255,6 +2378,11 @@
                 if (dist < 500) {
                     currentBoss.health -= 30;
                     score += 250 * combo;
+
+                    // Boss bark on taking damage
+                    if (currentBoss.name === 'SPERRING' && bossBark.timer <= 0) {
+                        showBossBark('damaged');
+                    }
 
                     // Boss damage explosion
                     createParticleBurst(currentBoss.x, currentBoss.y - 30, 'boss', 80, 'explosion');
@@ -4309,12 +4437,27 @@
                     headers: { 'X-Master-Key': _rSig }
                 });
 
+                // CRITICAL: Only proceed if we got a valid response with existing data
+                // Otherwise we'd overwrite the entire leaderboard with just our entry
+                if (!fetchResponse.ok) {
+                    console.log('Server fetch failed (' + fetchResponse.status + '), skipping server save to avoid data loss');
+                    leaderboard = localLeaderboard;
+                    return;
+                }
+
+                const data = await fetchResponse.json();
                 let serverLeaderboard = [];
-                if (fetchResponse.ok) {
-                    const data = await fetchResponse.json();
-                    if (data.record && Array.isArray(data.record.leaderboard)) {
-                        serverLeaderboard = data.record.leaderboard;
-                    }
+                if (data.record && Array.isArray(data.record.leaderboard)) {
+                    serverLeaderboard = data.record.leaderboard;
+                } else if (data.record) {
+                    // Record exists but no leaderboard array - could be first save or corrupted
+                    // Safe to start fresh only if record is truly empty
+                    console.log('Server record exists but no leaderboard array, starting fresh');
+                    serverLeaderboard = [];
+                } else {
+                    console.log('Unexpected server response format, skipping server save');
+                    leaderboard = localLeaderboard;
+                    return;
                 }
 
                 // Step 2: Merge our entry into server data (by name)
@@ -4325,7 +4468,7 @@
                 serverLeaderboard = serverLeaderboard.slice(0, 100);
 
                 // Step 4: Write back to server
-                await fetch(LEADERBOARD_API, {
+                const putResponse = await fetch(LEADERBOARD_API, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -4334,10 +4477,15 @@
                     body: JSON.stringify({ leaderboard: serverLeaderboard })
                 });
 
-                // Update local cache with merged data
-                leaderboard = serverLeaderboard;
-                localStorage.setItem('raanman_leaderboard', JSON.stringify(leaderboard));
-                console.log('Leaderboard saved to server successfully');
+                if (putResponse.ok) {
+                    // Update local cache with merged data
+                    leaderboard = serverLeaderboard;
+                    localStorage.setItem('raanman_leaderboard', JSON.stringify(leaderboard));
+                    console.log('Leaderboard saved to server successfully');
+                } else {
+                    console.log('Server PUT failed (' + putResponse.status + '), keeping local data');
+                    leaderboard = localLeaderboard;
+                }
 
             } catch (e) {
                 console.log('Server save failed, using local storage', e);
