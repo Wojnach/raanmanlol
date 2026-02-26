@@ -1,1 +1,1 @@
-{"agent_silence_seconds":326.1,"agent_silent":false,"cycle_count":17,"error_count":0,"heartbeat_age_seconds":326.1,"last_trigger":"post-trade reassessment","last_trigger_time":"2026-02-26T15:39:00.849642+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"stale"}
+{"agent_silence_seconds":662.2,"agent_silent":false,"cycle_count":18,"error_count":0,"heartbeat_age_seconds":308.0,"last_trigger":"post-trade reassessment","last_trigger_time":"2026-02-26T15:39:00.849642+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"stale"}
