@@ -1,1 +1,1 @@
-{"agent_silence_seconds":259.9,"agent_silent":false,"cycle_count":9,"error_count":0,"heartbeat_age_seconds":259.9,"last_trigger":"XAU-USD consensus BUY (56%)","last_trigger_time":"2026-02-26T14:21:45.313321+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"healthy"}
+{"agent_silence_seconds":315.6,"agent_silent":false,"cycle_count":10,"error_count":0,"heartbeat_age_seconds":315.6,"last_trigger":"ETH-USD consensus SELL (22%)","last_trigger_time":"2026-02-26T14:26:25.554514+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"stale"}
