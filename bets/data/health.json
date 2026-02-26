@@ -1,1 +1,1 @@
-{"agent_silence_seconds":998.1,"agent_silent":false,"cycle_count":18,"error_count":0,"heartbeat_age_seconds":643.8,"last_trigger":"post-trade reassessment","last_trigger_time":"2026-02-26T15:39:00.849642+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"stale"}
+{"agent_silence_seconds":199.7,"agent_silent":false,"cycle_count":19,"error_count":0,"heartbeat_age_seconds":199.7,"last_trigger":"VERI consensus SELL (67%)","last_trigger_time":"2026-02-26T15:57:54.967828+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"healthy"}
