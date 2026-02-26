@@ -1,1 +1,1 @@
-{"agent_silence_seconds":592.3,"agent_silent":false,"cycle_count":14,"error_count":0,"heartbeat_age_seconds":592.3,"last_trigger":"SMCI consensus BUY (47%)","last_trigger_time":"2026-02-26T15:06:35.079975+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"stale"}
+{"agent_silence_seconds":125.6,"agent_silent":false,"cycle_count":15,"error_count":0,"heartbeat_age_seconds":125.6,"last_trigger":"PLTR consensus BUY (65%)","last_trigger_time":"2026-02-26T15:19:58.163504+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"healthy"}
