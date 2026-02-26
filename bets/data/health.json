@@ -1,1 +1,1 @@
-{"agent_silence_seconds":277.4,"agent_silent":false,"cycle_count":13,"error_count":0,"heartbeat_age_seconds":277.4,"last_trigger":"ETH-USD consensus BUY (49%)","last_trigger_time":"2026-02-26T15:00:38.217122+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"healthy"}
+{"agent_silence_seconds":256.4,"agent_silent":false,"cycle_count":14,"error_count":0,"heartbeat_age_seconds":256.4,"last_trigger":"SMCI consensus BUY (47%)","last_trigger_time":"2026-02-26T15:06:35.079975+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"healthy"}
