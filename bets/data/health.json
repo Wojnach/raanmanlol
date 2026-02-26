@@ -1,1 +1,1 @@
-{"agent_silence_seconds":125.6,"agent_silent":false,"cycle_count":15,"error_count":0,"heartbeat_age_seconds":125.6,"last_trigger":"PLTR consensus BUY (65%)","last_trigger_time":"2026-02-26T15:19:58.163504+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"healthy"}
+{"agent_silence_seconds":106.9,"agent_silent":false,"cycle_count":16,"error_count":0,"heartbeat_age_seconds":106.9,"last_trigger":"XAG-USD consensus BUY (56%)","last_trigger_time":"2026-02-26T15:25:52.820451+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"healthy"}
