@@ -1,1 +1,1 @@
-{"agent_silence_seconds":669.0,"agent_silent":false,"cycle_count":20,"error_count":0,"heartbeat_age_seconds":669.0,"last_trigger":"GRRR consensus SELL (47%)","last_trigger_time":"2026-02-26T16:04:42.266508+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"stale"}
+{"agent_silence_seconds":153.1,"agent_silent":false,"cycle_count":21,"error_count":0,"heartbeat_age_seconds":153.1,"last_trigger":"BTC-USD consensus BUY (58%)","last_trigger_time":"2026-02-26T16:18:54.126056+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"healthy"}
