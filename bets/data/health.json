@@ -1,1 +1,1 @@
-{"agent_silence_seconds":655.4,"agent_silent":false,"cycle_count":23,"error_count":0,"heartbeat_age_seconds":655.4,"last_trigger":"TEM consensus SELL (100%)","last_trigger_time":"2026-02-26T16:38:32.856806+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"stale"}
+{"agent_silence_seconds":81.0,"agent_silent":false,"cycle_count":24,"error_count":0,"heartbeat_age_seconds":81.0,"last_trigger":"GOOGL consensus BUY (51%)","last_trigger_time":"2026-02-26T16:53:43.270325+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"healthy"}
