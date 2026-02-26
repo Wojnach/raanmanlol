@@ -1,1 +1,1 @@
-{"agent_silence_seconds":315.6,"agent_silent":false,"cycle_count":10,"error_count":0,"heartbeat_age_seconds":315.6,"last_trigger":"ETH-USD consensus SELL (22%)","last_trigger_time":"2026-02-26T14:26:25.554514+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"stale"}
+{"agent_silence_seconds":651.6,"agent_silent":false,"cycle_count":10,"error_count":0,"heartbeat_age_seconds":651.6,"last_trigger":"ETH-USD consensus SELL (22%)","last_trigger_time":"2026-02-26T14:26:25.554514+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"stale"}
