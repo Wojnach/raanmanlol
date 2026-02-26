@@ -1,1 +1,1 @@
-{"agent_silence_seconds":1073.4,"agent_silent":false,"cycle_count":4,"error_count":0,"heartbeat_age_seconds":818.7,"last_trigger":"AMZN consensus SELL (50%)","last_trigger_time":"2026-02-26T13:23:25.116343+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"stale"}
+{"agent_silence_seconds":276.1,"agent_silent":false,"cycle_count":5,"error_count":0,"heartbeat_age_seconds":276.1,"last_trigger":"BABA consensus BUY (54%)","last_trigger_time":"2026-02-26T13:42:18.249993+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"healthy"}
