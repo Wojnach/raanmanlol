@@ -1,1 +1,1 @@
-{"agent_silence_seconds":199.7,"agent_silent":false,"cycle_count":19,"error_count":0,"heartbeat_age_seconds":199.7,"last_trigger":"VERI consensus SELL (67%)","last_trigger_time":"2026-02-26T15:57:54.967828+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"healthy"}
+{"agent_silence_seconds":128.6,"agent_silent":false,"cycle_count":20,"error_count":0,"heartbeat_age_seconds":128.6,"last_trigger":"GRRR consensus SELL (47%)","last_trigger_time":"2026-02-26T16:04:42.266508+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"healthy"}
