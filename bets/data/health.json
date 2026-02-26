@@ -1,1 +1,1 @@
-{"agent_silence_seconds":947.9,"agent_silent":false,"cycle_count":6,"error_count":0,"heartbeat_age_seconds":641.8,"last_trigger":"BABA consensus BUY (54%)","last_trigger_time":"2026-02-26T13:42:18.249993+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"stale"}
+{"agent_silence_seconds":89.0,"agent_silent":false,"cycle_count":7,"error_count":0,"heartbeat_age_seconds":89.0,"last_trigger":"cooldown (10min)","last_trigger_time":"2026-02-26T14:02:12.433936+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"healthy"}
