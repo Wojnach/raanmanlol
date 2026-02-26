@@ -1,1 +1,1 @@
-{"agent_silence_seconds":81.0,"agent_silent":false,"cycle_count":24,"error_count":0,"heartbeat_age_seconds":81.0,"last_trigger":"GOOGL consensus BUY (51%)","last_trigger_time":"2026-02-26T16:53:43.270325+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"healthy"}
+{"agent_silence_seconds":57.9,"agent_silent":false,"cycle_count":25,"error_count":0,"heartbeat_age_seconds":57.9,"last_trigger":"BTC-USD consensus BUY (58%)","last_trigger_time":"2026-02-26T16:59:42.103447+00:00","recent_errors":[],"signals_failed":0,"signals_ok":30,"status":"healthy"}
