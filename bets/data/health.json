@@ -1,1 +1,1 @@
-{"agent_silence_seconds":1970.9,"agent_silent":false,"cycle_count":2,"error_count":0,"heartbeat_age_seconds":1970.9,"last_trigger":"AVGO consensus SELL (64%)","last_trigger_time":"2026-02-27T20:40:59.955582+00:00","recent_errors":[],"signals_failed":0,"signals_ok":27,"status":"stale"}
+{"agent_silence_seconds":2332.7,"agent_silent":false,"cycle_count":2,"error_count":0,"heartbeat_age_seconds":2332.7,"last_trigger":"AVGO consensus SELL (64%)","last_trigger_time":"2026-02-27T20:40:59.955582+00:00","recent_errors":[],"signals_failed":0,"signals_ok":27,"status":"stale"}
