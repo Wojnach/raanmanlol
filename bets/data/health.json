@@ -1,1 +1,1 @@
-{"agent_silence_seconds":825.8,"agent_silent":false,"cycle_count":14,"error_count":0,"heartbeat_age_seconds":825.8,"last_trigger":"PLTR consensus BUY (86%)","last_trigger_time":"2026-02-27T13:58:08.491292+00:00","recent_errors":[],"signals_failed":0,"signals_ok":27,"status":"stale"}
+{"agent_silence_seconds":69.2,"agent_silent":false,"cycle_count":15,"error_count":0,"heartbeat_age_seconds":69.2,"last_trigger":"VRT consensus BUY (84%)","last_trigger_time":"2026-02-27T14:16:26.441853+00:00","recent_errors":[],"signals_failed":0,"signals_ok":27,"status":"healthy"}
