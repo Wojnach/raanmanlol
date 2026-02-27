@@ -1,1 +1,1 @@
-{"agent_silence_seconds":287.1,"agent_silent":false,"cycle_count":9,"error_count":0,"heartbeat_age_seconds":287.1,"last_trigger":"XAU-USD consensus SELL (62%)","last_trigger_time":"2026-02-27T12:23:58.814854+00:00","recent_errors":[],"signals_failed":0,"signals_ok":27,"status":"healthy"}
+{"agent_silence_seconds":631.2,"agent_silent":false,"cycle_count":9,"error_count":0,"heartbeat_age_seconds":631.2,"last_trigger":"XAU-USD consensus SELL (62%)","last_trigger_time":"2026-02-27T12:23:58.814854+00:00","recent_errors":[],"signals_failed":0,"signals_ok":27,"status":"stale"}
