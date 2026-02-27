@@ -1,1 +1,1 @@
-{"agent_silence_seconds":256.4,"agent_silent":false,"cycle_count":5,"error_count":0,"heartbeat_age_seconds":256.4,"last_trigger":"MU consensus BUY (83%)","last_trigger_time":"2026-02-27T11:09:54.754217+00:00","recent_errors":[],"signals_failed":0,"signals_ok":27,"status":"healthy"}
+{"agent_silence_seconds":602.1,"agent_silent":false,"cycle_count":5,"error_count":0,"heartbeat_age_seconds":602.1,"last_trigger":"MU consensus BUY (83%)","last_trigger_time":"2026-02-27T11:09:54.754217+00:00","recent_errors":[],"signals_failed":0,"signals_ok":27,"status":"stale"}
