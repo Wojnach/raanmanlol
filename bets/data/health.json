@@ -1,1 +1,1 @@
-{"agent_silence_seconds":761.9,"agent_silent":false,"cycle_count":10,"error_count":0,"heartbeat_age_seconds":761.9,"last_trigger":"MSTR consensus SELL (38%)","last_trigger_time":"2026-02-27T17:47:11.178475+00:00","recent_errors":[],"signals_failed":0,"signals_ok":27,"status":"stale"}
+{"agent_silence_seconds":1106.4,"agent_silent":false,"cycle_count":10,"error_count":0,"heartbeat_age_seconds":1106.4,"last_trigger":"MSTR consensus SELL (38%)","last_trigger_time":"2026-02-27T17:47:11.178475+00:00","recent_errors":[],"signals_failed":0,"signals_ok":27,"status":"stale"}
