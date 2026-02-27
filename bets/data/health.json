@@ -1,1 +1,1 @@
-{"agent_silence_seconds":177.6,"agent_silent":false,"cycle_count":12,"error_count":0,"heartbeat_age_seconds":177.6,"last_trigger":"cooldown (10min)","last_trigger_time":"2026-02-27T13:17:18.933421+00:00","recent_errors":[],"signals_failed":0,"signals_ok":27,"status":"healthy"}
+{"agent_silence_seconds":522.4,"agent_silent":false,"cycle_count":12,"error_count":0,"heartbeat_age_seconds":522.4,"last_trigger":"cooldown (10min)","last_trigger_time":"2026-02-27T13:17:18.933421+00:00","recent_errors":[],"signals_failed":0,"signals_ok":27,"status":"stale"}
