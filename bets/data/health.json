@@ -1,1 +1,1 @@
-{"agent_silence_seconds":4164.4,"agent_silent":false,"cycle_count":1,"error_count":0,"heartbeat_age_seconds":46.1,"last_trigger":"XAG-USD consensus BUY (88%)","last_trigger_time":"2026-02-27T18:45:54.825793+00:00","recent_errors":[],"signals_failed":0,"signals_ok":27,"status":"healthy"}
+{"agent_silence_seconds":4527.0,"agent_silent":false,"cycle_count":1,"error_count":0,"heartbeat_age_seconds":408.7,"last_trigger":"XAG-USD consensus BUY (88%)","last_trigger_time":"2026-02-27T18:45:54.825793+00:00","recent_errors":[],"signals_failed":0,"signals_ok":27,"status":"stale"}
