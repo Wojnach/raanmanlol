@@ -1,1 +1,1 @@
-{"agent_silence_seconds":851.2,"agent_silent":false,"cycle_count":13,"error_count":0,"heartbeat_age_seconds":851.2,"last_trigger":"XAU-USD consensus SELL (64%)","last_trigger_time":"2026-02-27T13:40:31.652673+00:00","recent_errors":[],"signals_failed":0,"signals_ok":27,"status":"stale"}
+{"agent_silence_seconds":137.1,"agent_silent":false,"cycle_count":14,"error_count":0,"heartbeat_age_seconds":137.1,"last_trigger":"PLTR consensus BUY (86%)","last_trigger_time":"2026-02-27T13:58:08.491292+00:00","recent_errors":[],"signals_failed":0,"signals_ok":27,"status":"healthy"}
