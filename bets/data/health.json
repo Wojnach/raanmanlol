@@ -1,1 +1,1 @@
-{"agent_silence_seconds":28626.7,"agent_silent":true,"cycle_count":1,"error_count":0,"heartbeat_age_seconds":3608.9,"last_trigger":"LMT consensus SELL (45%)","last_trigger_time":"2026-02-28T01:05:23.479456+00:00","recent_errors":[],"signals_failed":0,"signals_ok":27,"status":"stale"}
+{"agent_silence_seconds":83.3,"agent_silent":false,"cycle_count":2,"error_count":0,"heartbeat_age_seconds":83.3,"last_trigger":"BTC-USD flipped BUY->SELL (sustained)","last_trigger_time":"2026-02-28T09:07:09.014576+00:00","recent_errors":[],"signals_failed":0,"signals_ok":27,"status":"healthy"}
