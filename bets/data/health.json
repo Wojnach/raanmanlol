@@ -1,1 +1,1 @@
-{"agent_silence_seconds":25363.1,"agent_silent":true,"cycle_count":1,"error_count":0,"heartbeat_age_seconds":345.3,"last_trigger":"LMT consensus SELL (45%)","last_trigger_time":"2026-02-28T01:05:23.479456+00:00","recent_errors":[],"signals_failed":0,"signals_ok":27,"status":"stale"}
+{"agent_silence_seconds":25725.8,"agent_silent":true,"cycle_count":1,"error_count":0,"heartbeat_age_seconds":708.0,"last_trigger":"LMT consensus SELL (45%)","last_trigger_time":"2026-02-28T01:05:23.479456+00:00","recent_errors":[],"signals_failed":0,"signals_ok":27,"status":"stale"}
