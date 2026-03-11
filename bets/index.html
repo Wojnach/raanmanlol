@@ -1698,20 +1698,27 @@
          ================================================================ */
       async function loadMetals() {
         var d = await fj("/api/metals");
-        if (!d || !d.context) {
-          document.getElementById("metalsSummary").innerHTML = '<div class="nd">No metals data available</div>';
+        var ctx = d && d.context ? d.context : null;
+
+        if (!ctx) {
+          document.getElementById("metalsSummary").innerHTML = '<div class="nd">Live metals context unavailable. Showing any other data that could be loaded.</div>';
           document.getElementById("metalsPositions").innerHTML = "";
           document.getElementById("metalsRiskContent").innerHTML = '<div class="nd">--</div>';
-          document.getElementById("metalsTechContent").innerHTML = '<div class="nd">--</div>';
-          document.getElementById("metalsDecisions").innerHTML = '<div class="nd">--</div>';
-          return;
+        } else {
+          renderMetalsSummary(ctx);
+          renderMetalsPositionCards(ctx);
+          renderMetalsRisk(ctx);
         }
-        renderMetalsSummary(d.context);
-        renderMetalsPositionCards(d.context);
-        renderMetalsRisk(d.context);
-        renderMetalsTechnicals(d.technicals, d.context);
-        renderMetalsDecisions(d.decisions);
-        renderMetalsPriceChart(d.context);
+
+        renderMetalsTechnicals(d ? d.technicals : null, ctx || {});
+        renderMetalsDecisions(d ? d.decisions : null);
+
+        if (ctx) {
+          renderMetalsPriceChart(ctx);
+        } else if (metalsPriceChartInstance) {
+          metalsPriceChartInstance.destroy();
+          metalsPriceChartInstance = null;
+        }
       }
 
       function renderMetalsSummary(ctx) {
