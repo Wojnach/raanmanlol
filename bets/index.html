@@ -368,6 +368,14 @@
         border: 1px solid var(--bdr); transition: all 0.2s;
       }
       .atab.active { background: var(--cyn); color: #0a0e17; border-color: var(--cyn); }
+      .acc-toolbar {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 10px; margin-bottom: 10px; flex-wrap: wrap;
+      }
+      .acc-sort {
+        background: var(--card2); color: var(--tx); border: 1px solid var(--bdr);
+        border-radius: 4px; padding: 4px 8px; font-size: 11px;
+      }
 
       .abr { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
       .abl { font-size: 10px; color: var(--txd); width: 70px; text-align: right; flex-shrink: 0; }
@@ -833,6 +841,8 @@
       var accChartInstance = null;
       var metalsPriceChartInstance = null;
       var gdScoreChartInstance = null;
+      var _accuracyData = null;
+      var _accuracySort = "pct_desc";
 
       // Tickers: populated dynamically from data
       var T = [];
@@ -876,6 +886,39 @@
       }
       function eh(s) {
         return s ? String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;") : "";
+      }
+      function _accuracySortLabel(mode) {
+        if (mode === "pct_asc") return "Accuracy: lowest first";
+        if (mode === "samples_desc") return "Samples: highest first";
+        if (mode === "name_asc") return "Signal name: A-Z";
+        return "Accuracy: highest first";
+      }
+      function _sortAccuracyEntries(entries, mode) {
+        return entries.slice().sort(function(a, b) {
+          var an = a[0], bn = b[0];
+          var av = a[1] || {}, bv = b[1] || {};
+          var ap = av.pct != null ? Number(av.pct) : -1;
+          var bp = bv.pct != null ? Number(bv.pct) : -1;
+          var at = av.total != null ? Number(av.total) : 0;
+          var bt = bv.total != null ? Number(bv.total) : 0;
+
+          if (mode === "pct_asc") {
+            if (ap !== bp) return ap - bp;
+            if (at !== bt) return bt - at;
+            return an.localeCompare(bn);
+          }
+          if (mode === "samples_desc") {
+            if (at !== bt) return bt - at;
+            if (ap !== bp) return bp - ap;
+            return an.localeCompare(bn);
+          }
+          if (mode === "name_asc") {
+            return an.localeCompare(bn);
+          }
+          if (ap !== bp) return bp - ap;
+          if (at !== bt) return bt - at;
+          return an.localeCompare(bn);
+        });
       }
 
       /* ================================================================
@@ -1544,37 +1587,65 @@
       /* ================================================================
          Accuracy panel
          ================================================================ */
-      async function loadAccuracy() {
+      function setAccuracySort(mode) {
+        _accuracySort = mode || "pct_desc";
+        if (_accuracyData) renderAccuracy(_accuracyData);
+      }
+
+      function renderAccuracy(d) {
         var c = document.getElementById("accC");
-        var d = await fj("/api/accuracy");
         if (!d || d.error || !Object.keys(d).length) {
           c.innerHTML = '<div class="nd">No accuracy data available</div>';
           return;
         }
-        var ks = Object.keys(d);
-        var h = '<div class="atabs">';
+
+        var horizonOrder = ["1d", "3d", "5d", "10d"];
+        var ks = horizonOrder.filter(function (k) { return d[k]; });
+        if (!ks.length) ks = Object.keys(d);
+
+        var h = '<div class="acc-toolbar">';
+        h += '<div style="font-size:11px;color:var(--txm)">Sort portfolio-loop signals for each horizon panel</div>';
+        h += '<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--txm)">Sort';
+        h += '<select class="acc-sort" onchange="setAccuracySort(this.value)">';
+        h += '<option value="pct_desc"' + (_accuracySort === "pct_desc" ? " selected" : "") + '>Accuracy desc</option>';
+        h += '<option value="pct_asc"' + (_accuracySort === "pct_asc" ? " selected" : "") + '>Accuracy asc</option>';
+        h += '<option value="samples_desc"' + (_accuracySort === "samples_desc" ? " selected" : "") + '>Samples desc</option>';
+        h += '<option value="name_asc"' + (_accuracySort === "name_asc" ? " selected" : "") + '>Name A-Z</option>';
+        h += '</select></label></div>';
+        h += '<div class="atabs">';
         ks.forEach(function (k, i) {
           h += '<div class="atab' + (i === 0 ? ' active' : '') + '" onclick="satab(this,\'' + k + '\')">' + k + '</div>';
         });
         h += '</div>';
+
         ks.forEach(function (k, i) {
           h += '<div class="apnl" data-h="' + k + '" style="' + (i > 0 ? 'display:none' : '') + '">';
           var hd = d[k];
           if (hd.consensus)
             h += '<div style="margin-bottom:8px;font-size:12px;color:var(--txd)">Consensus: <strong style="color:var(--tx)">' + fn(hd.consensus.pct, 1) + '%</strong> (' + hd.consensus.correct + '/' + hd.consensus.total + ')</div>';
           if (hd.signals) {
+            var signalEntries = _sortAccuracyEntries(Object.entries(hd.signals), _accuracySort);
+            h += '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px">';
+            h += '<div style="font-size:10px;color:var(--txm);text-transform:uppercase">Signals</div>';
+            h += '<div style="font-size:10px;color:var(--txm)">' + _accuracySortLabel(_accuracySort) + '</div>';
+            h += '</div>';
             h += '<div style="margin-bottom:10px">';
-            Object.keys(hd.signals).forEach(function (n) {
-              var sd = hd.signals[n], p = sd.pct || 0;
+            signalEntries.forEach(function (entry) {
+              var n = entry[0];
+              var sd = entry[1] || {};
+              var p = sd.pct || 0;
               var bc = p >= 55 ? "var(--grn)" : p >= 45 ? "var(--yel)" : "var(--red)";
               h += '<div class="abr"><div class="abl">' + n + '</div><div class="abt"><div class="abf" style="width:' + p + '%;background:' + bc + '">' + fn(p, 0) + '%</div></div><div class="abc">' + sd.correct + '/' + sd.total + '</div></div>';
             });
             h += '</div>';
           }
           if (hd.per_ticker) {
+            var tickerEntries = _sortAccuracyEntries(Object.entries(hd.per_ticker), "pct_desc");
             h += '<div style="font-size:10px;color:var(--txm);margin-bottom:5px">PER TICKER</div>';
-            Object.keys(hd.per_ticker).forEach(function (t) {
-              var td = hd.per_ticker[t], p = td.pct || 0;
+            tickerEntries.forEach(function (entry) {
+              var t = entry[0];
+              var td = entry[1] || {};
+              var p = td.pct || 0;
               var bc = p >= 55 ? "var(--grn)" : p >= 45 ? "var(--yel)" : "var(--red)";
               h += '<div class="abr"><div class="abl">' + t + '</div><div class="abt"><div class="abf" style="width:' + p + '%;background:' + bc + '">' + fn(p, 0) + '%</div></div><div class="abc">' + td.correct + '/' + td.total + '</div></div>';
             });
@@ -1582,6 +1653,12 @@
           h += '</div>';
         });
         c.innerHTML = h;
+      }
+
+      async function loadAccuracy() {
+        var d = await fj("/api/accuracy");
+        _accuracyData = d;
+        renderAccuracy(d);
       }
 
       /* ================================================================
